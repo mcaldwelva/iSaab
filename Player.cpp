@@ -346,9 +346,9 @@ void Player::getStatus(uint8_t data[]) {
 
   // changed
   static uint8_t last[5] = {0, 0, 0, 0, 0};
-  if (memcmp(last, data + 3, 5)) {
+  if (memcmp(last, (data + 3), 5)) {
     data[0] |= 0x80;
-    memcpy(last, data + 3, 5);
+    memcpy(last, (data + 3), 5);
   }
 }
 
