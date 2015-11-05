@@ -306,34 +306,11 @@ void Player::getStatus(uint8_t data[]) {
     time = 0;
   }
 
-  // rapid play mode
-  bool rapid = (data[1] == 0x45) || (data[1] == 0x46);
+  // married
+  data[7] = 0xd0;
 
-  // updated message
-  data[0] = 0xa0;
-  data[1] = 0x00;
-
-  // full magazine
-  data[2] = 0b00111111;
-
-  // disc
-  data[3] = disc % 9 + 1;
-
-  // play status
-  if (!playing) data[3] |= 0x80;
-  if (active)   data[3] |= 0x40;
-  if (rapid)    data[3] |= 0x20;
-
-  // track
-  data[4] = (track / 10) % 10;
-  data[4] <<= 4;
-  data[4] |= track % 10;
-
-  // minutes
-  uint8_t min = time / 60;
-  data[5] = (min / 10) % 10;
-  data[5] <<= 4;
-  data[5] |= min % 10;
+  // random
+  if (shuffled) data[7] |= 0x20;
 
   // seconds
   uint8_t sec = time % 60;
@@ -341,11 +318,38 @@ void Player::getStatus(uint8_t data[]) {
   data[6] <<= 4;
   data[6] |= sec % 10;
 
-  // married
-  data[7] = 0xd0;
+  // minutes
+  uint8_t min = time / 60;
+  data[5] = (min / 10) % 10;
+  data[5] <<= 4;
+  data[5] |= min % 10;
 
-  // RDM
-  if (shuffled) data[7] |= 0x20;
+  // track
+  data[4] = (track / 10) % 10;
+  data[4] <<= 4;
+  data[4] |= track % 10;
+
+  // disc
+  data[3] = disc % 9 + 1;
+
+  // play status
+  bool rapid = (data[1] == 0x45) || (data[1] == 0x46);
+  if (!playing) data[3] |= 0x80;
+  if (active)   data[3] |= 0x40;
+  if (rapid)    data[3] |= 0x20;
+
+  // full magazine
+  data[2] = 0b00111111;
+
+  data[1] = 0x00;
+  data[0] = 0x20;
+
+  // changed
+  static uint8_t last[5] = {0, 0, 0, 0, 0};
+  if (memcmp(last, data + 3, 5)) {
+    data[0] |= 0x80;
+    memcpy(last, data + 3, 5);
+  }
 }
 
 
