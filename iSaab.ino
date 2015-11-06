@@ -93,12 +93,12 @@ inline __attribute__((always_inline))
 void presenceRequest(uint8_t data[]) {
   // handle presence request
   switch (data[3] & 0x0f) {
+    case 0x02: // play
+      data[3] = 0x16;
+      break;
     case 0x03: // power on
       cdc.begin();
       data[3] = 0x03;
-      break;
-    case 0x02: // play
-      data[3] = 0x16;
       break;
     case 0x08: // power off
       cdc.end();

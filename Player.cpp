@@ -12,12 +12,13 @@
 
 // guarantees progress through the entire library
 // and next track selected in < 2 seconds
-#define RANDOM_TRACK trackNum + random(512)
+#define RANDOM_TRACK (trackNum + 1 + random(512))
 
 Player::Player() {
   // initial player state
   playing = false;
   active = false;
+  depth = 0;
 
   // select the first track
   trackNum = 0;
@@ -71,7 +72,6 @@ bool Player::begin() {
 
     // open SD root
     path[0].dir = SD.open(F("/"));
-    depth = 0;
 
     // load FLAC patch
     loadPlugin(F("PATCH053.BIN"));
@@ -91,15 +91,18 @@ void Player::end() {
   Serial.println(F("END"));
 #endif
   if (active) {
-    // start with the current track on next start-up
-    stopTrack();
+    // resume current track on start-up
     trackNext = trackNum;
 
     // collapse path structure
-    while (depth >= 0) {
+    stopTrack();
+    while (depth > 0) {
       path[depth].dir.close();
       depth--;
     }
+
+    // close root
+    path[0].dir.close();
 
     // turn off sound card
     VS1053::end();
@@ -224,17 +227,15 @@ void Player::nextDisc() {
 
 // read presets from file
 void Player::readPresets(const __FlashStringHelper* fileName) {
-  short i = 0;
-  uint8_t c;
-
-  // clear presets
+  // clear existing presets
   memset(presets, 0, sizeof(trackNum) * NUM_PRESETS);
 
   // open the file
   File file = SD.open(fileName);
   if (file) {
+    short i = 0;
     while (i < NUM_PRESETS && file.available()) {
-      c = file.read() - '0';
+      uint8_t c = file.read() - '0';
       if (c <= 9) {
         presets[i] *= 10;
         presets[i] += c;
@@ -242,7 +243,10 @@ void Player::readPresets(const __FlashStringHelper* fileName) {
         i++;
       }
     }
-  }  
+
+    // done
+    file.close();
+  }
 }
 
 
@@ -329,14 +333,14 @@ void Player::getStatus(uint8_t data[]) {
   data[4] <<= 4;
   data[4] |= track % 10;
 
-  // disc
-  data[3] = disc % 9 + 1;
-
   // play status
   bool rapid = (data[1] == 0x45) || (data[1] == 0x46);
+  data[3] = 0x40;
   if (!playing) data[3] |= 0x80;
-  if (active)   data[3] |= 0x40;
   if (rapid)    data[3] |= 0x20;
+
+  // disc
+  data[3] |= disc % 9 + 1;
 
   // full magazine
   data[2] = 0b00111111;
@@ -346,9 +350,9 @@ void Player::getStatus(uint8_t data[]) {
 
   // changed
   static uint8_t last[5] = {0, 0, 0, 0, 0};
-  if (memcmp(last, (data + 3), 5)) {
+  if (memcmp(last, (data + 3), sizeof(last))) {
     data[0] |= 0x80;
-    memcpy(last, (data + 3), 5);
+    memcpy(last, (data + 3), sizeof(last));
   }
 }
 
