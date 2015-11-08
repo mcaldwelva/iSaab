@@ -7,10 +7,10 @@
 #include "tags.h"
 
 // various macros to interpret multi-byte integers
-#define LE7x4(x) ((unsigned long) x[0] << 21 | (unsigned long) x[1] << 14 | (unsigned long) x[2] << 7 | (unsigned long) x[3])
-#define LE8x4(x) ((unsigned long) x[0] << 24 | (unsigned long) x[1] << 16 | (unsigned long) x[2] << 8 | (unsigned long) x[3])
-#define LE8x3(x) ((unsigned long) x[0] << 16 | (unsigned long) x[1] <<  8 | (unsigned long) x[2])
-#define BE8x4(x) ((unsigned long) x[0] | (unsigned long) x[1] << 8 | (unsigned long) x[2] << 16 | (unsigned long) x[3] << 24)
+#define LE7x4(x) ((unsigned) x[0] << 21 | (unsigned) x[1] << 14 | (unsigned) x[2] << 7 | (unsigned) x[3])
+#define LE8x4(x) ((unsigned) x[0] << 24 | (unsigned) x[1] << 16 | (unsigned) x[2] << 8 | (unsigned) x[3])
+#define LE8x3(x) ((unsigned) x[0] << 16 | (unsigned) x[1] <<  8 | (unsigned) x[2])
+#define BE8x4(x) ((unsigned) x[3] << 24 | (unsigned) x[2] << 16 | (unsigned) x[1] << 8 | (unsigned) x[0])
 
 static char title[24];
 static char artist[24];
