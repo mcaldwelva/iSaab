@@ -28,7 +28,7 @@ void tags::asciiStringCopy(char dst[], char src[], uint8_t dsize, uint8_t ssize)
 inline __attribute__((always_inline))
 void tags::readTag(File file, char tag[], unsigned long size) {
   char buffer[60];
-  long skip;
+  unsigned long skip;
 
   // read the tag data
   skip = size - sizeof(buffer);
@@ -57,7 +57,7 @@ void tags::readTag(File file, char tag[], unsigned long size) {
 inline __attribute__((always_inline))
 void tags::readTag(File file, unsigned long size) {
   char buffer[66];
-  long skip;
+  unsigned long skip;
 
   // read the tag data
   skip = size - sizeof(buffer);
