@@ -119,11 +119,11 @@ void controlRequest(uint8_t data[]) {
     case 0x00: // no command
       break;
     case 0x14: // deselect CDC
-    case 0xb1: // MUTE on
+    case 0xb0: // MUTE on
       cdc.pause();
       break;
     case 0x24: // select CDC
-    case 0xb0: // MUTE off
+    case 0xb1: // MUTE off
       cdc.resume();
       break;
     case 0x35: // TRACK >>

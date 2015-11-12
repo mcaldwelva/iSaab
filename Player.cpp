@@ -7,7 +7,6 @@
 
 #include <SD.h>
 #include <util/atomic.h>
-#include "tags.h"
 #include "Player.h"
 
 // guarantees progress through the entire library
@@ -334,10 +333,9 @@ void Player::getStatus(uint8_t data[]) {
   data[4] |= track % 10;
 
   // play status
-  bool rapid = (data[1] == 0x45) || (data[1] == 0x46);
+  bool rapid = (data[1] == 0x45) || (data[1] == 0x46) || (data[1] == 0xb1);
   data[3] = 0x40;
-  if (!playing) data[3] |= 0x80;
-  if (rapid)    data[3] |= 0x20;
+  if (rapid) data[3] |= 0x20;
 
   // disc
   data[3] |= disc % 9 + 1;
@@ -371,7 +369,7 @@ void Player::dumpPath() {
     Serial.println();
   }
 
-  tags::getTags(currentTrack);
+  Serial.println(currentTrack.name());
 }
 
 
