@@ -41,6 +41,10 @@ Procedure:
 
 > return card.init(SPI_FULL_SPEED, csPin) &&
 
+* Modify Arduino/libraries/SD/src/utility/SdFile.cpp to allow non-ASCII characters:
+
+> if (i > n || c < 0x20 || c == 0x7F) return false;
+
 * Upload the iSaab code to the module
 * Plug it in...
 
@@ -50,9 +54,7 @@ http://www.ridgecrop.demon.co.uk/index.htm?fat32format.htm)
 * Place patch053.bin in the root. The root is reserved for special files.
 * Place music files (FLAC, Ogg Vorbis, MP3, MPEG4, WMA) into sub-directories, up-to three levels deep (e.g. /Album/Track or /Artist/Album/Track or /Genre/Artist/Album/Track).
 * Files are played in filesystem order, with the exception that all files in a parent folder are played before descending into child folders. You may need special tools to sort files to play in the expected order (e.g. http://www.anerty.net/software/file/DriveSort.php)
-* Optionally, modify Arduino/libraries/SD/src/utility/SdFile.cpp to allow non-ASCII characters:
-
-> if (i > n || c < 0x20 || c == 0x7F) return false;
+* Create presets.txt in the root, containing up to 6 space separated numbers representing the play-order of the songs.
 
 ![inside](https://raw.githubusercontent.com/mcaldwelva/iSaab/master/data/inside.jpg)
 ![front](https://raw.githubusercontent.com/mcaldwelva/iSaab/master/data/front.jpg)
