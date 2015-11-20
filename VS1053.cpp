@@ -100,7 +100,10 @@ bool VS1053::startTrack() {
 
   // burn through header
   largeBuffer = true;
+  bool save = playing;
+  playing = true;
   playTrack();
+  playing = save;
 
   // lossless codecs need a larger buffer
   uint16_t codec = sciRead(SCI_HDAT1);

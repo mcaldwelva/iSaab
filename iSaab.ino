@@ -73,49 +73,70 @@ void processMessage() {
     // act on it
     switch (msg.id) {
       case RX_CDC_PRESENT:
-        msg.id = TX_CDC_PRESENT;
-        presenceRequest(msg.data);
+        presenceRequest(msg);
         break;
 
       case RX_CDC_CONTROL:
-        msg.id = TX_CDC_CONTROL;
-        controlRequest(msg.data);
+        controlRequest(msg);
         break;
     }
+  }
+}
 
-    // send the reply
+
+inline __attribute__((always_inline))
+void presenceRequest(CAN::msg &msg) {
+  uint8_t action = msg.data[3] & 0x0f;
+
+  // reply id
+  msg.id = TX_CDC_PRESENT;
+
+  // handle presence request
+  switch (action) {
+    case 0x02: // active
+      msg.data[3] = 0x16;
+      break;
+    case 0x03: // power on
+      cdc.begin();
+      msg.data[3] = 0x03;
+      break;
+    case 0x08: // power off
+      cdc.end();
+      msg.data[3] = 0x19;
+      break;
+  }
+  msg.data[0] = 0x32;
+  msg.data[6] = 0x00;
+  while (ibus.send(msg) == 0xff);
+
+  // send rest of sequence
+  switch (action) {
+    case 0x02: // active
+      msg.data[3] = 0x36;
+      break;
+    case 0x03: // power on
+      msg.data[3] = 0x22;
+      break;
+    case 0x08: // power off
+      msg.data[3] = 0x38;
+      break;
+  }
+  msg.data[4] = 0x00;
+  msg.data[5] = 0x00;
+  while (msg.data[0] < 0x62) {
+    msg.data[0] += 0x10;
     while (ibus.send(msg) == 0xff);
   }
 }
 
 
 inline __attribute__((always_inline))
-void presenceRequest(uint8_t data[]) {
-  // handle presence request
-  switch (data[3] & 0x0f) {
-    case 0x02: // play
-      data[3] = 0x16;
-      break;
-    case 0x03: // power on
-      cdc.begin();
-      data[3] = 0x03;
-      break;
-    case 0x08: // power off
-      cdc.end();
-      data[3] = 0x18;
-      break;
-  }
+void controlRequest(CAN::msg &msg) {
+  // reply id
+  msg.id = TX_CDC_CONTROL;
 
-  // prepare reply
-  data[0] = 0x32;
-  data[6] = 0x00;
-}
-
-
-inline __attribute__((always_inline))
-void controlRequest(uint8_t data[]) {
   // map CDC commands to methods
-  switch (data[1]) {
+  switch (msg.data[1]) {
     case 0x00: // no command
       break;
     case 0x14: // deselect CDC
@@ -142,14 +163,15 @@ void controlRequest(uint8_t data[]) {
       cdc.nextDisc();
       break;
     case 0x68: // 1 - 6
-      cdc.preset(data[2]);
+      cdc.preset(msg.data[2]);
       break;
     case 0x76: // RDM toggle
-      if (data[0] & 0x80) cdc.shuffle();
+      if (msg.data[0] & 0x80) cdc.shuffle();
       break;
   }
 
   // get current status
-  cdc.getStatus(data);
+  cdc.getStatus(msg.data);
+  while (ibus.send(msg) == 0xff);
 }
 

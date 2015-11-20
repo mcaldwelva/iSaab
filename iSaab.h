@@ -58,8 +58,8 @@ const uint16_t ibus_masks[] PROGMEM =
 
 // prototypes
 void processMessage();
-void presenceRequest(uint8_t data[]);
-void controlRequest(uint8_t data[]);
+void presenceRequest(CAN::msg &);
+void controlRequest(CAN::msg &);
 void sendMessage(uint16_t, const uint8_t data[]);
 
 #endif // iSaab_H
