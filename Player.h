@@ -47,7 +47,6 @@ class Player : private VS1053
     unsigned int trackNum;
     volatile unsigned int trackNext;
     volatile bool shuffled;
-    volatile bool active;
     unsigned int presets[NUM_PRESETS];
 
     // filesystem stuff

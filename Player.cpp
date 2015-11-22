@@ -15,8 +15,7 @@
 
 Player::Player() {
   // initial player state
-  playing = false;
-  active = false;
+  state = Off;
   depth = 0;
 
   // select the first track
@@ -54,7 +53,7 @@ bool Player::begin() {
 #if (DEBUGMODE==1)
   Serial.println(F("BEGIN"));
 #endif
-  if (!active) {
+  if (state == Off) {
     // turn on sound card
     if (!VS1053::begin()) {
 #if (DEBUGMODE==1)
@@ -78,7 +77,7 @@ bool Player::begin() {
     // read presets
     readPresets(F("PRESETS.TXT"));
 
-    active = true;
+    state = Playing;
   }
 
   return true;
@@ -89,7 +88,7 @@ void Player::end() {
 #if (DEBUGMODE==1)
   Serial.println(F("END"));
 #endif
-  if (active) {
+  if (state != Off) {
     // resume current track on start-up
     trackNext = trackNum;
 
@@ -106,17 +105,18 @@ void Player::end() {
     // turn off sound card
     VS1053::end();
 
-    active = false;
+    state = Off;
   }
 }
 
 // main playback loop
 void Player::loop() {
 #if (DEBUGMODE==1)
-  if (active) {
+  if
 #else
-  while (active) {
+  while
 #endif
+  (state != Off) {
     if (currentTrack) {
       // keep the audio buffer full
       playTrack();
@@ -141,7 +141,7 @@ void Player::pause() {
 #if (DEBUGMODE==1)
   Serial.println(F("PAUSE"));
 #endif
-  playing = false;
+  if (state == Playing) state = Paused;
 }
 
 
@@ -149,7 +149,7 @@ void Player::resume() {
 #if (DEBUGMODE==1)
   Serial.println(F("RESUME"));
 #endif
-  playing = true;
+  if (state == Paused) state = Playing;
 }
 
 
@@ -280,33 +280,33 @@ void Player::forward() {
 
 // gather player status for Saab
 void Player::getStatus(uint8_t data[]) {
-  uint8_t disc;
-  uint8_t track;
   uint16_t time;
+  uint8_t track;
+  uint8_t disc;
 
   if (trackNext == UNKNOWN) {
     // playing current track
+    time = trackTime();
     track = trackNum - path[depth].min + 1;
     disc = path[depth].folder;
-    time = trackTime();
   }
   else if (trackNext >= path[depth].max) {
     // new track is on the next disc
+    time = 0;
     track = trackNext - path[depth].max + 1;
     disc = path[depth].folder + 1;
-    time = 0;
   }
   else if (trackNext < path[depth].min) {
     // new track is on the previous disc
+    time = 0;
     track = 100 - (trackNum - trackNext);
     disc = path[depth].folder - 1;
-    time = 0;
   }
   else {
     // new track is on the current disc
+    time = 0;
     track = trackNext - path[depth].min + 1;
     disc = path[depth].folder;
-    time = 0;
   }
 
   // married
@@ -334,7 +334,7 @@ void Player::getStatus(uint8_t data[]) {
 
   // play status
   bool rapid = (data[1] == 0x45) || (data[1] == 0x46) || (data[1] == 0xb1);
-  data[3] = 0x40;
+  data[3] = state << 4;
   if (rapid) data[3] |= 0x20;
 
   // disc
@@ -369,7 +369,11 @@ void Player::dumpPath() {
     Serial.println();
   }
 
+#if (DEBUGMODE==1)
+  tags::getTags(currentTrack);
+#else
   Serial.println(currentTrack.name());
+#endif
 }
 
 
@@ -404,7 +408,7 @@ top:
 
   // search from here until we find our file
   while (file_count <= trackNext) {
-    if (!active) {
+    if (state == Off) {
       // the rug's been pulled out from under us
       return;
     }

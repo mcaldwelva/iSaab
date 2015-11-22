@@ -100,10 +100,10 @@ bool VS1053::startTrack() {
 
   // burn through header
   largeBuffer = true;
-  bool save = playing;
-  playing = true;
+  State save = state;
+  state = Playing;
   playTrack();
-  playing = save;
+  state = save;
 
   // lossless codecs need a larger buffer
   uint16_t codec = sciRead(SCI_HDAT1);
@@ -119,7 +119,7 @@ void VS1053::playTrack() {
   size_t bufferSize = largeBuffer ? VS1053_LARGE_BUFFER : VS1053_SMALL_BUFFER;
 
   // stay here as long as we need to
-  while (playing && currentTrack && readyForData()) {
+  while (state == Playing && currentTrack && readyForData()) {
     // this is critical for FLAC
     ATOMIC_BLOCK(ATOMIC_FORCEON) {
       bytesRead = currentTrack.read(buffer, bufferSize);
