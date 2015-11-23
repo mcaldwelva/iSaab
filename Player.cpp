@@ -116,7 +116,7 @@ void Player::loop() {
 #else
   while
 #endif
-  (state != Off) {
+  (state >= Playing) {
     if (currentTrack) {
       // keep the audio buffer full
       playTrack();
@@ -334,8 +334,7 @@ void Player::getStatus(uint8_t data[]) {
 
   // play status
   bool rapid = (data[1] == 0x45) || (data[1] == 0x46) || (data[1] == 0xb1);
-  data[3] = state << 4;
-  if (rapid) data[3] |= 0x20;
+  data[3] = rapid ? 0x60 :  state << 4;
 
   // disc
   data[3] |= disc % 9 + 1;
