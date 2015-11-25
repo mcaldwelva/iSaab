@@ -334,7 +334,7 @@ void Player::getStatus(uint8_t data[]) {
 
   // play status
   bool rapid = (data[1] == 0x45) || (data[1] == 0x46) || (data[1] == 0xb1);
-  data[3] = rapid ? 0x60 :  state << 4;
+  data[3] = state ? (rapid ? 0x60 : 0x40) : 0x00;
 
   // disc
   data[3] |= disc % 9 + 1;
