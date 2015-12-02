@@ -48,19 +48,6 @@ void loop() {
 }
 
 
-// send a new message out
-void sendMessage(uint16_t id, const uint8_t data[]) {
-  CAN::msg msg;
-
-  msg.id = id;
-  msg.header.rtr = 0;
-  msg.header.length = IBUS_PACKET_SIZE;
-  memcpy(msg.data, data, IBUS_PACKET_SIZE);
-
-  while (ibus.send(msg) == 0xff);
-}
-
-
 // interrupt handler for incoming message
 void processMessage() {
   CAN::msg msg;
@@ -72,12 +59,12 @@ void processMessage() {
 
     // act on it
     switch (msg.id) {
-      case RX_CDC_PRESENT:
-        presenceRequest(msg);
-        break;
-
       case RX_CDC_CONTROL:
         controlRequest(msg);
+        break;
+
+      case RX_CDC_PRESENT:
+        presenceRequest(msg);
         break;
     }
   }
@@ -137,16 +124,6 @@ void controlRequest(CAN::msg &msg) {
 
   // map CDC commands to methods
   switch (msg.data[1]) {
-    case 0x00: // no command
-      break;
-    case 0x14: // deselect CDC
-    case 0xb0: // MUTE on
-      cdc.pause();
-      break;
-    case 0x24: // select CDC
-    case 0xb1: // MUTE off
-      cdc.resume();
-      break;
     case 0x35: // TRACK >>
       cdc.nextTrack();
       break;
@@ -166,7 +143,17 @@ void controlRequest(CAN::msg &msg) {
       cdc.preset(msg.data[2]);
       break;
     case 0x76: // RDM toggle
-      if (msg.data[0] & 0x80) cdc.shuffle();
+      cdc.shuffle();
+      break;
+    case 0x14: // deselect CDC
+    case 0xb0: // MUTE on
+      cdc.pause();
+      break;
+    case 0x24: // select CDC
+    case 0xb1: // MUTE off
+      cdc.resume();
+      break;
+    case 0x00: // no command
       break;
   }
 

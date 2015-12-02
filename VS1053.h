@@ -89,7 +89,7 @@ class VS1053 {
     void setVolume(uint8_t, uint8_t);
     bool loadPlugin(const __FlashStringHelper*);
 
-    enum State : uint8_t { Off = 0, Standby = 3, Playing = 4, Paused = 5, Rapid = 6 };
+    enum State : uint8_t { Off = 0x00, Standby = 0x30, Playing = 0x40, Paused = 0x50, Rapid = 0x60 };
     volatile State state;
     File currentTrack;
 

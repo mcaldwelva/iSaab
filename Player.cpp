@@ -280,77 +280,82 @@ void Player::forward() {
 
 // gather player status for Saab
 void Player::getStatus(uint8_t data[]) {
-  uint16_t time;
-  uint8_t track;
-  uint8_t disc;
+  if (state >= Playing) {
+    uint16_t time;
+    uint8_t track;
+    uint8_t disc;
 
-  if (trackNext == UNKNOWN) {
-    // playing current track
-    time = trackTime();
-    track = trackNum - path[depth].min + 1;
-    disc = path[depth].folder;
-  }
-  else if (trackNext >= path[depth].max) {
-    // new track is on the next disc
-    time = 0;
-    track = trackNext - path[depth].max + 1;
-    disc = path[depth].folder + 1;
-  }
-  else if (trackNext < path[depth].min) {
-    // new track is on the previous disc
-    time = 0;
-    track = 100 - (trackNum - trackNext);
-    disc = path[depth].folder - 1;
-  }
-  else {
-    // new track is on the current disc
-    time = 0;
-    track = trackNext - path[depth].min + 1;
-    disc = path[depth].folder;
+    if (trackNext == UNKNOWN) {
+      // playing current track
+      time = trackTime();
+      track = trackNum - path[depth].min + 1;
+      disc = path[depth].folder;
+    }
+    else if (trackNext >= path[depth].max) {
+      // new track is on the next disc
+      time = 0;
+      track = trackNext - path[depth].max + 1;
+      disc = path[depth].folder + 1;
+    }
+    else if (trackNext < path[depth].min) {
+      // new track is on the previous disc
+      time = 0;
+      track = 100 - (trackNum - trackNext);
+      disc = path[depth].folder - 1;
+    }
+    else {
+      // new track is on the current disc
+      time = 0;
+      track = trackNext - path[depth].min + 1;
+      disc = path[depth].folder;
+    }
+
+    // seconds
+    uint8_t sec = time % 60;
+    data[6] = sec / 10;
+    data[6] <<= 4;
+    data[6] |= sec % 10;
+
+    // minutes
+    uint8_t min = time / 60;
+    data[5] = (min / 10) % 10;
+    data[5] <<= 4;
+    data[5] |= min % 10;
+
+    // track
+    data[4] = (track / 10) % 10;
+    data[4] <<= 4;
+    data[4] |= track % 10;
+
+    // play status
+    bool rapid = (data[1] == 0x45) || (data[1] == 0x46);
+    data[3] = rapid ? Rapid : Playing;
+
+    // disc
+    data[3] |= disc % 9 + 1;
+  } else {
+    data[6] = 0xff;
+    data[5] = 0xff;
+    data[4] = 0xff;
+    data[3] = state | 1;
   }
 
-  // married
+  // status change
+  static uint8_t last[4] = {0, 0, 0, 0};
+  data[0] = 0x20;
+  if (data[1] || memcmp(last, (data + 3), sizeof(last))) {
+    data[0] |= 0x80;
+    if (last[0] & 0xf0 == Off) data[0] |= 0x40;
+    memcpy(last, (data + 3), sizeof(last));
+  }
+
+  // married, random
   data[7] = 0xd0;
-
-  // random
   if (shuffled) data[7] |= 0x20;
-
-  // seconds
-  uint8_t sec = time % 60;
-  data[6] = sec / 10;
-  data[6] <<= 4;
-  data[6] |= sec % 10;
-
-  // minutes
-  uint8_t min = time / 60;
-  data[5] = (min / 10) % 10;
-  data[5] <<= 4;
-  data[5] |= min % 10;
-
-  // track
-  data[4] = (track / 10) % 10;
-  data[4] <<= 4;
-  data[4] |= track % 10;
-
-  // play status
-  bool rapid = (data[1] == 0x45) || (data[1] == 0x46) || (data[1] == 0xb1);
-  data[3] = state ? (rapid ? 0x60 : 0x40) : 0x00;
-
-  // disc
-  data[3] |= disc % 9 + 1;
 
   // full magazine
   data[2] = 0b00111111;
-
   data[1] = 0x00;
-  data[0] = 0x20;
-
-  // changed
-  static uint8_t last[5] = {0, 0, 0, 0, 0};
-  if (memcmp(last, (data + 3), sizeof(last))) {
-    data[0] |= 0x80;
-    memcpy(last, (data + 3), sizeof(last));
-  }
 }
 
 
@@ -387,7 +392,6 @@ void Player::openNextTrack() {
   Serial.println(trackNext, DEC);
 #endif
 
-  // start searching from the current file
   // collapse current path as necessary
   while (path[depth].min > trackNext) {
     path[depth].dir.close();
@@ -395,7 +399,7 @@ void Player::openNextTrack() {
   }
 
 top:
-  // rewind the current directory
+  // start at the top of the directory
   path[depth].dir.rewindDirectory();
   file_count = path[depth].min;
   dir_count =  path[depth].folder;
