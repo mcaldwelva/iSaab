@@ -337,7 +337,7 @@ void Player::getStatus(uint8_t data[]) {
     data[6] = 0xff;
     data[5] = 0xff;
     data[4] = 0xff;
-    data[3] = state | 1;
+    data[3] = Off | 1;
   }
 
   // status change
@@ -399,10 +399,15 @@ void Player::openNextTrack() {
   }
 
 top:
-  // start at the top of the directory
-  path[depth].dir.rewindDirectory();
-  file_count = path[depth].min;
-  dir_count =  path[depth].folder;
+  if (trackNext > trackNum) {
+    // start with the current file
+    file_count = trackNum + 1;
+  } else {
+    // start at the top of the directory
+    path[depth].dir.rewindDirectory();
+    file_count = path[depth].min;
+  }
+  dir_count = path[depth].folder;
 
 #if (DEBUGMODE==1)
   Serial.print(F("Starting at:"));
@@ -429,15 +434,9 @@ top:
           Serial.println(entry.name());
 #endif
 
-          if (file_count++ == trackNext) {
+          if (file_count++ == trackNext && path[depth].max != UNKNOWN) {
             // this is the file we're looking for
-            currentTrack = entry;
-
-            // don't need to finish exploring this folder
-            // if we know how many tracks there are
-            if (path[depth].max != UNKNOWN) {
-              goto done;
-            }
+            goto done;
           } else {
             // skip this file
             entry.close();
@@ -452,9 +451,12 @@ top:
       // we know how many files are in this dir now
       path[depth].max = file_count;
       path[depth].dir.rewindDirectory();
-      // don't count dir's that have no files
+
+      // only count this folder if it has files
       if (path[depth].min != path[depth].max) dir_count++;
 
+      // rollback the file count if we've discovered the new track
+      if (file_count > trackNext) file_count = path[depth].min;
     } else {
 
       // start checking sub-directories
@@ -503,6 +505,7 @@ top:
   }
 
 done:
+  currentTrack = entry;
 #if (DEBUGMODE==1)
   dumpPath();
 #endif
