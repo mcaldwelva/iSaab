@@ -38,7 +38,7 @@ void VS1053::setup() {
 bool VS1053::begin() {
   // turn on sound card
   digitalWrite(VS1053_XRESET, HIGH);
-  delay(2);
+  delay(100);
 
   // turn down analog
   setVolume(0xfe, 0xfe);
