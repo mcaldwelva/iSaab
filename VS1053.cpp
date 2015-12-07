@@ -100,10 +100,7 @@ bool VS1053::startTrack() {
 
   // burn through header
   largeBuffer = true;
-  State save = state;
-  state = Playing;
-  playTrack();
-  state = save;
+  playTrack(true);
 
   // lossless codecs need a larger buffer
   uint16_t codec = sciRead(SCI_HDAT1);
@@ -114,12 +111,12 @@ bool VS1053::startTrack() {
 
 
 // transfer as much data from file as needed to fill the card's internal buffer
-void VS1053::playTrack() {
+void VS1053::playTrack(bool force) {
   int bytesRead;
   size_t bufferSize = largeBuffer ? VS1053_LARGE_BUFFER : VS1053_SMALL_BUFFER;
 
   // stay here as long as we need to
-  while (state == Playing && currentTrack && readyForData()) {
+  while (((state == Playing) || force) && currentTrack && readyForData()) {
     // this is critical for FLAC
     ATOMIC_BLOCK(ATOMIC_FORCEON) {
       bytesRead = currentTrack.read(buffer, bufferSize);
@@ -231,7 +228,6 @@ void VS1053::sendData(uint8_t data[], uint16_t len) {
   SPI.endTransaction();
 #endif
 }
-
 
 inline __attribute__((always_inline))
 void VS1053::setVolume(uint8_t left, uint8_t right) {

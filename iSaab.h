@@ -29,7 +29,7 @@
 
 // only accept these messages
 const uint16_t ibus_filters[] PROGMEM =
-  {RX_CDC_CONTROL, 0x000, RX_CDC_PRESENT, 0x000, 0x000, 0x000};
+  {RX_CDC_PRESENT, RX_CDC_CONTROL, 0x000, 0x000, 0x000, 0x000};
 const uint16_t ibus_masks[] PROGMEM =
   {0x7ff, 0x7ff};
 

@@ -28,6 +28,7 @@ class Player : private VS1053
     void end();
     void loop();
 
+    void standby();
     void pause();
     void resume();
     void shuffle();

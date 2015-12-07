@@ -77,7 +77,7 @@ bool Player::begin() {
     // read presets
     readPresets(F("PRESETS.TXT"));
 
-    state = Playing;
+    state = Standby;
   }
 
   return true;
@@ -116,7 +116,7 @@ void Player::loop() {
 #else
   while
 #endif
-  (state >= Playing) {
+  (state != Off) {
     if (currentTrack) {
       // keep the audio buffer full
       playTrack();
@@ -137,6 +137,14 @@ void Player::loop() {
 }
 
 
+void Player::standby() {
+#if (DEBUGMODE==1)
+  Serial.println(F("STANDBY"));
+#endif
+  if (state != Off) state = Standby;
+}
+
+
 void Player::pause() {
 #if (DEBUGMODE==1)
   Serial.println(F("PAUSE"));
@@ -149,7 +157,7 @@ void Player::resume() {
 #if (DEBUGMODE==1)
   Serial.println(F("RESUME"));
 #endif
-  if (state == Paused) state = Playing;
+  if (state != Off) state = Playing;
 }
 
 
@@ -280,11 +288,13 @@ void Player::forward() {
 
 // gather player status for Saab
 void Player::getStatus(uint8_t data[]) {
+  // if player is active
   if (state >= Playing) {
     uint16_t time;
     uint8_t track;
     uint8_t disc;
 
+    // gather track information
     if (trackNext == UNKNOWN) {
       // playing current track
       time = trackTime();
@@ -337,15 +347,15 @@ void Player::getStatus(uint8_t data[]) {
     data[6] = 0xff;
     data[5] = 0xff;
     data[4] = 0xff;
-    data[3] = Off | 1;
+    data[3] = state | 1;
   }
 
-  // status change
-  static uint8_t last[4] = {0, 0, 0, 0};
+  // changed, ready, reply
+  static uint8_t last[4] = {0x01, 0xff, 0xff, 0xff};
   data[0] = 0x20;
   if (data[1] || memcmp(last, (data + 3), sizeof(last))) {
+    if ((last[0] & 0xf0) == Off) data[0] |= 0x40;
     data[0] |= 0x80;
-    if (last[0] & 0xf0 == Off) data[0] |= 0x40;
     memcpy(last, (data + 3), sizeof(last));
   }
 

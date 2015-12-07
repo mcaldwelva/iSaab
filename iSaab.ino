@@ -146,6 +146,8 @@ void controlRequest(CAN::msg &msg) {
       cdc.shuffle();
       break;
     case 0x14: // deselect CDC
+      cdc.standby();
+      break;
     case 0xb0: // MUTE on
       cdc.pause();
       break;

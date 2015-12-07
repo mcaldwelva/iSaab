@@ -79,7 +79,7 @@ class VS1053 {
     void end();
 
     bool startTrack();
-    void playTrack();
+    void playTrack(bool force = false);
     void stopTrack();
 
     uint16_t trackTime();
