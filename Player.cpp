@@ -462,11 +462,14 @@ top:
       path[depth].max = file_count;
       path[depth].dir.rewindDirectory();
 
-      // only count this folder if it has files
-      if (path[depth].min != path[depth].max) dir_count++;
-
-      // rollback the file count if we've discovered the new track
-      if (file_count > trackNext) file_count = path[depth].min;
+      // if we've discovered the new track
+      if (file_count > trackNext) { 
+        // rollback the file count
+        file_count = path[depth].min;
+      } else {
+        // count this folder if it contained files
+        if (path[depth].min != path[depth].max) dir_count++;
+      }
     } else {
 
       // start checking sub-directories
