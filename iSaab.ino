@@ -84,12 +84,11 @@ void presenceRequest(CAN::msg &msg) {
       msg.data[3] = 0x16;
       break;
     case 0x03: // power on
-      cdc.begin();
       msg.data[3] = 0x03;
       break;
     case 0x08: // power off
-      cdc.end();
       msg.data[3] = 0x19;
+      cdc.end();
       break;
   }
   msg.data[0] = 0x32;
@@ -143,7 +142,7 @@ void controlRequest(CAN::msg &msg) {
       cdc.preset(msg.data[2]);
       break;
     case 0x76: // RDM toggle
-      cdc.shuffle();
+      if (msg.data[0] & 0x80) cdc.shuffle();
       break;
     case 0x14: // deselect CDC
       cdc.standby();

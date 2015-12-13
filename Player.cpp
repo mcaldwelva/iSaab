@@ -157,7 +157,8 @@ void Player::resume() {
 #if (DEBUGMODE==1)
   Serial.println(F("RESUME"));
 #endif
-  if (state != Off) state = Playing;
+  begin();
+  state = Playing;
 }
 
 
