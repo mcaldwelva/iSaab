@@ -343,13 +343,13 @@ void Player::getStatus(uint8_t data[]) {
 
   // play status
   bool rapid = (data[1] == 0x45) || (data[1] == 0x46);
-  data[3] = rapid ? Rapid : Playing;
+  data[3] = rapid ? Rapid : state;
 
   // disc
   data[3] |= disc % 6 + 1;
 
   // changed, ready, reply
-  static uint8_t last[4] = {0x02, 0x00, 0x00, 0x00};
+  static uint8_t last[4] = {0x02, 0x01, 0x00, 0x00};
   data[0] = 0x20;
   if (data[1] || memcmp(last, (data + 3), sizeof(last))) {
     if ((last[0] & 0xf0) == Off) data[0] |= 0x40;
