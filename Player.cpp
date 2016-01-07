@@ -17,6 +17,7 @@ Player::Player() {
   // initial player state
   state = Off;
   depth = 0;
+  rapidCount = 0;
 
   // select the first track
   trackNum = 0;
@@ -278,8 +279,17 @@ void Player::rewind() {
 #if (DEBUGMODE==1)
   Serial.println(F("REWIND"));
 #endif
+  int seconds;
 
-  skip(-3);
+  if (rapidCount >= 15) {
+    seconds = -12;
+  } else if (rapidCount >= 10) {
+    seconds = -7;
+  } else {
+    seconds = -3;
+  }
+
+  skip(seconds);
 }
 
 
@@ -287,8 +297,17 @@ void Player::forward() {
 #if (DEBUGMODE==1)
   Serial.println(F("FAST FORWARD"));
 #endif
+  int seconds;
 
-  skip(+1);
+  if (rapidCount >= 15) {
+    seconds = +10;
+  } else if (rapidCount >= 10) {
+    seconds = +5;
+  } else {
+    seconds = +1;
+  }
+
+  skip(seconds);
 }
 
 
@@ -342,8 +361,13 @@ void Player::getStatus(uint8_t data[]) {
   data[4] |= track % 10;
 
   // play status
-  bool rapid = (data[1] == 0x45) || (data[1] == 0x46);
-  data[3] = rapid ? Rapid : state;
+  if ((data[1] == 0x45) || (data[1] == 0x46)) {
+    rapidCount++;
+    data[3] = Rapid;
+  } else {
+    rapidCount = 0;
+    data[3] = state;
+  }
 
   // disc
   data[3] |= disc % 6 + 1;

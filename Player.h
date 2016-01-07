@@ -49,6 +49,7 @@ class Player : private VS1053
     volatile unsigned int trackNext;
     volatile bool shuffled;
     unsigned int presets[NUM_PRESETS];
+    unsigned short rapidCount;
 
     // filesystem stuff
     void dumpPath();
