@@ -85,6 +85,7 @@ void presenceRequest(CAN::msg &msg) {
       break;
     case 0x03: // power on
       msg.data[3] = 0x03;
+      cdc.begin();
       break;
     case 0x08: // power off
       msg.data[3] = 0x19;
@@ -123,6 +124,8 @@ void controlRequest(CAN::msg &msg) {
 
   // map CDC commands to methods
   switch (msg.data[1]) {
+    case 0x00: // no command
+      break;
     case 0x35: // TRACK >>
       cdc.nextTrack();
       break;
@@ -144,17 +147,15 @@ void controlRequest(CAN::msg &msg) {
     case 0x76: // RDM toggle
       if (msg.data[0] & 0x80) cdc.shuffle();
       break;
-    case 0x14: // deselect CDC
-      cdc.standby();
-      break;
     case 0xb0: // MUTE on
       cdc.pause();
       break;
-    case 0x24: // select CDC
-    case 0xb1: // MUTE off
-      cdc.resume();
+    case 0x14: // deselect CDC
+      cdc.standby();
       break;
-    case 0x00: // no command
+    case 0xb1: // MUTE off
+    case 0x24: // select CDC
+      cdc.resume();
       break;
   }
 
