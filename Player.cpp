@@ -366,7 +366,7 @@ void Player::getStatus(uint8_t data[]) {
     data[3] = Rapid;
   } else {
     rapidCount = 0;
-    data[3] = state;
+    data[3] = (state == Paused) ? Playing : state;
   }
 
   // disc
