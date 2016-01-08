@@ -434,6 +434,9 @@ top:
   if (trackNext > trackNum) {
     // start with the current file
     file_count = trackNum + 1;
+    if (file_count == path[depth].max) {
+      path[depth].dir.rewindDirectory();
+    }
   } else {
     // start at the top of the directory
     path[depth].dir.rewindDirectory();
