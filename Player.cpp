@@ -431,18 +431,21 @@ void Player::openNextTrack() {
   }
 
 top:
+  dir_count = path[depth].folder;
   if (trackNext > trackNum) {
     // start with the current file
     file_count = trackNum + 1;
+
+    // was this the last file in the directory?
     if (file_count == path[depth].max) {
       path[depth].dir.rewindDirectory();
+      dir_count++;
     }
   } else {
     // start at the top of the directory
     path[depth].dir.rewindDirectory();
     file_count = path[depth].min;
   }
-  dir_count = path[depth].folder;
 
 #if (DEBUGMODE==1)
   Serial.print(F("Starting at:"));
