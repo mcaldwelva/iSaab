@@ -139,7 +139,7 @@ void controlRequest(CAN::msg &msg) {
       cdc.rewind();
       break;
     case 0x59: // NXT
-      cdc.nextDisc();
+      if (msg.data[0] & 0x80) cdc.nextDisc();
       break;
     case 0x68: // 1 - 6
       cdc.preset(msg.data[2]);
