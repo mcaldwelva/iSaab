@@ -52,7 +52,7 @@ Procedure:
 * Format an SD card with FAT32. SD cards larger than 32GB may require special tools (e.g.
 http://www.ridgecrop.demon.co.uk/index.htm?fat32format.htm)
 * Place patch053.bin in the root. The root is reserved for special files.
-* Place music files (FLAC, Ogg Vorbis, MP3, MPEG4, WMA) into sub-directories, up-to three levels deep (e.g. /Album/Track or /Artist/Album/Track or /Genre/Artist/Album/Track).
+* Place music files (FLAC 16b/44kHz, Ogg Vorbis, MP3, MPEG4, WMA) into sub-directories, up-to three levels deep (e.g. /Album/Track or /Artist/Album/Track or /Genre/Artist/Album/Track).
 * Files are played in filesystem order, with the exception that all files in a parent folder are played before descending into child folders. You may need special tools to sort files to play in the expected order (e.g. http://www.anerty.net/software/file/DriveSort.php)
 * Create presets.txt in the root, containing up to 6 space separated numbers representing the play-order of the songs.
 
