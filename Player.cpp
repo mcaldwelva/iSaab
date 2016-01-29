@@ -343,6 +343,10 @@ void Player::getStatus(uint8_t data[]) {
     disc = path[depth].folder;
   }
 
+  // married, random
+  data[7] = 0xd0;
+  if (shuffled) data[7] |= 0x20;
+
   // seconds
   uint8_t sec = time % 60;
   data[6] = sec / 10;
@@ -372,21 +376,19 @@ void Player::getStatus(uint8_t data[]) {
   // disc
   data[3] |= disc % 6 + 1;
 
+  // full magazine
+  data[2] = 0b00111111;
+
   // changed, ready, reply
   static uint8_t last[4] = {0x02, 0x01, 0x00, 0x00};
   data[0] = 0x20;
+  
   if (data[1] || memcmp(last, (data + 3), sizeof(last))) {
-    if ((last[0] & 0xf0) == Off) data[0] |= 0x40;
+    if (data[1]) data[0] |= 0x40;
     data[0] |= 0x80;
     memcpy(last, (data + 3), sizeof(last));
   }
 
-  // married, random
-  data[7] = 0xd0;
-  if (shuffled) data[7] |= 0x20;
-
-  // full magazine
-  data[2] = 0b00111111;
   data[1] = 0x00;
 }
 
