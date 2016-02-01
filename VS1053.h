@@ -8,7 +8,7 @@
 #ifndef VS1053_H
 #define VS1053_H
 
-#include <SD.h>
+#include "MediaFile.h"
 
 #define VS1053_LARGE_BUFFER  512
 #define VS1053_SMALL_BUFFER  32
@@ -79,7 +79,7 @@ class VS1053 {
     void end();
 
     bool startTrack();
-    void playTrack(bool force = false);
+    void playTrack();
     void stopTrack();
 
     uint16_t trackTime();
@@ -91,12 +91,11 @@ class VS1053 {
 
     enum State : uint8_t { Off = 0x00, Standby = 0x30, Playing = 0x40, Paused = 0x50, Rapid = 0x60 };
     volatile State state;
-    File currentTrack;
+    MediaFile currentTrack;
 
   private:
     bool readyForData();
     void sendData(uint8_t[], uint16_t);
-    bool largeBuffer;
 
     uint16_t sciRead(uint8_t);
     void sciWrite(uint8_t, uint16_t);

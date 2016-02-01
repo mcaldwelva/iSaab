@@ -95,28 +95,26 @@ bool VS1053::startTrack() {
   sciWrite(SCI_DECODETIME, 0x00);
   sciWrite(SCI_DECODETIME, 0x00);
 
+  // read header
+  ATOMIC_BLOCK(ATOMIC_FORCEON) {
+    uint16_t bytesRead = currentTrack.readHeader(buffer, VS1053_LARGE_BUFFER);
+    sendData(buffer, bytesRead);
+  }
+
   // turn analog up
   setVolume(0x00, 0x00);
-
-  // burn through header
-  largeBuffer = true;
-  playTrack(true);
-
-  // lossless codecs need a larger buffer
-  uint16_t codec = sciRead(SCI_HDAT1);
-  largeBuffer = (codec == CODEC_FLAC) || (codec == CODEC_WAV);
 
   return true;
 }
 
 
 // transfer as much data from file as needed to fill the card's internal buffer
-void VS1053::playTrack(bool force) {
+void VS1053::playTrack() {
   int bytesRead;
-  size_t bufferSize = largeBuffer ? VS1053_LARGE_BUFFER : VS1053_SMALL_BUFFER;
+  size_t bufferSize = currentTrack.highBitRate ? VS1053_LARGE_BUFFER : VS1053_SMALL_BUFFER;
 
   // stay here as long as we need to
-  while (((state == Playing) || force) && currentTrack && readyForData()) {
+  while (state == Playing && currentTrack && readyForData()) {
     // this is critical for FLAC
     ATOMIC_BLOCK(ATOMIC_FORCEON) {
       bytesRead = currentTrack.read(buffer, bufferSize);
@@ -143,7 +141,7 @@ void VS1053::skip(int secs) {
   long rate = sciRead(SCI_WRAM);
 
   // adjust rate based on codec
-  if (largeBuffer) {
+  if (currentTrack.highBitRate) {
     rate <<= 2;
   } else {
     rate &= ~3;

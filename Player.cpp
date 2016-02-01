@@ -112,12 +112,7 @@ void Player::end() {
 
 // main playback loop
 void Player::loop() {
-#if (DEBUGMODE==1)
-  if
-#else
-  while
-#endif
-  (state != Off) {
+  while (state != Off) {
     if (currentTrack) {
       // keep the audio buffer full
       playTrack();
@@ -270,8 +265,40 @@ void Player::preset(uint8_t memory) {
   Serial.println(memory, DEC);
 #endif
 
-  trackNext = presets[memory - 1];
-  stopTrack();
+  if (shuffled) {
+    switch (memory) {
+      case 1:
+#if (DEBUGMODE==1)
+        Serial.print(F("Title: "));
+        for (int i = 0; i < 24; i++) {
+          Serial.print(currentTrack.title[i]);
+        }
+        Serial.println();
+#endif
+        break;
+      case 2:
+#if (DEBUGMODE==1)
+        Serial.print(F("Album: "));
+        for (int i = 0; i < 24; i++) {
+          Serial.print(currentTrack.album[i]);
+        }
+        Serial.println();
+#endif
+        break;
+      case 3:
+#if (DEBUGMODE==1)
+        Serial.print(F("Artist: "));
+        for (int i = 0; i < 24; i++) {
+          Serial.print(currentTrack.artist[i]);
+        }
+        Serial.println();
+#endif
+        break;
+    }
+  } else {
+    trackNext = presets[memory - 1];
+    stopTrack();
+  }
 }
 
 
@@ -407,11 +434,7 @@ void Player::dumpPath() {
     Serial.println();
   }
 
-#if (DEBUGMODE==1)
-  tags::getTags(currentTrack);
-#else
   Serial.println(currentTrack.name());
-#endif
 }
 
 
