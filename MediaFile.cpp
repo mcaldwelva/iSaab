@@ -101,11 +101,11 @@ void MediaFile::readMp3Header(uint8_t ver) {
   seek(position() + 2);
 
   // get header size
-  read(buffer, 4);
-  header_end = position() + LE7x4(buffer);
+  tag_size = read(buffer, 4);
+  header_end = position() + tag_size;
 
   // scan tags
-  while (position() < header_end) {
+  while (tag_size > 0 && position() < header_end) {
     if (ver >= 3) {
       // v2.3 or greater
       read(tag, 4);
@@ -129,11 +129,10 @@ void MediaFile::readMp3Header(uint8_t ver) {
       tag_size = LE8x3(buffer);
     }
 
-    if (tag_size == 0) break;
     readTag(tag, tag_size);
   }
 
-  // leave it sector aligned
+  // leave file sector aligned
   seek((header_end / 32) * 32);
 }
 
@@ -189,7 +188,7 @@ void MediaFile::readFlacHeader() {
     }
   } while (!last_block);
 
-  // leave it sector aligned
+  // leave file sector aligned
   seek((position() / 512) * 512);
 }
 
