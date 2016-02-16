@@ -12,19 +12,18 @@
 #define LE8x3(x) (((uint32_t)((uint8_t)x[0])) << 16 | ((uint32_t)((uint8_t)x[1])) <<  8 | ((uint32_t)((uint8_t)x[2])))
 #define BE8x4(x) (((uint32_t)((uint8_t)x[3])) << 24 | ((uint32_t)((uint8_t)x[2])) << 16 | ((uint32_t)((uint8_t)x[1])) << 8 | ((uint32_t)((uint8_t)x[0])))
 
-char *buffer;
-
 // effectively the constructor
-void MediaFile::operator= (const SDLib::File &file) {
+void MediaFile::operator= (const File &file) {
   File::operator=(file);
 
-  highBitRate = false;
+  flac = false;
   memset(title, ' ', 24);
   memset(album, ' ', 24);
   memset(artist, ' ', 24);
 }
 
 
+// copy ascii/wide/unicode string to ascii
 void MediaFile::asciiStringCopy(char dst[], char src[], uint8_t dsize, uint8_t ssize) {
   for (int i = 0, j = 0; i < ssize && j < dsize; i++) {
     if (32 <= src[i] && src[i] <= 126) {
@@ -37,6 +36,7 @@ void MediaFile::asciiStringCopy(char dst[], char src[], uint8_t dsize, uint8_t s
 // read an ID3 tag and store it if it's one we care about
 inline __attribute__((always_inline))
 void MediaFile::readTag(char tag[], uint32_t size) {
+  char buffer[TAG_BUFFER];
   long skip;
 
   // read the tag data
@@ -58,6 +58,9 @@ void MediaFile::readTag(char tag[], uint32_t size) {
   else if (!strncmp_P(tag, PSTR("TPE1"), 4) || !strncmp_P(tag, PSTR("TP1"), 3)) {
     asciiStringCopy(artist, buffer, 24, size);
   }
+  else if (!strncmp_P(tag, PSTR("TYER"), 4) || !strncmp_P(tag, PSTR("TYE"), 3)) {
+    asciiStringCopy(year, buffer, 4, size);
+  }
 //  else if (!strncmp_P(tag, PSTR("XRVA"), 4) || !strncmp_P(tag, PSTR("RVA2"), 3)) {
 //  }
 }
@@ -66,6 +69,7 @@ void MediaFile::readTag(char tag[], uint32_t size) {
 // read a Vorbis comment and store it if it's one we care about
 inline __attribute__((always_inline))
 void MediaFile::readTag(uint32_t size) {
+  char buffer[TAG_BUFFER];
   long skip;
 
   // read the tag data
@@ -87,22 +91,26 @@ void MediaFile::readTag(uint32_t size) {
   else if (!strncasecmp_P(buffer, PSTR("ARTIST="), 7)) {
     asciiStringCopy(artist, (buffer + 7), 24, size - 7);
   }
+  else if (!strncasecmp_P(buffer, PSTR("DATE="), 5)) {
+    asciiStringCopy(year, (buffer + 5), 24, size - 5);
+  }
 //  else if (!strncasecmp_P(buffer, PSTR("REPLAYGAIN_TRACK_GAIN="), 22)) {
 //  }
 }
 
 
 void MediaFile::readMp3Header(uint8_t ver) {
+  char buffer[4];
   char tag[5];
   uint32_t header_end;
-  uint32_t tag_size;
+  uint32_t tag_size = 1;
 
   // skip minor version & extended header info
-  seek(position() + 2);
+  read(buffer, 2);
 
   // get header size
-  tag_size = read(buffer, 4);
-  header_end = position() + tag_size;
+  read(buffer, 4);
+  header_end = position() + LE7x4(buffer);
 
   // scan tags
   while (tag_size > 0 && position() < header_end) {
@@ -132,8 +140,8 @@ void MediaFile::readMp3Header(uint8_t ver) {
     readTag(tag, tag_size);
   }
 
-  // leave file sector aligned
-  seek((header_end / 32) * 32);
+  // skip to the end
+  seek(header_end);
 }
 
 
@@ -187,29 +195,25 @@ void MediaFile::readFlacHeader() {
       }
     }
   } while (!last_block);
-
-  // leave file sector aligned
-  seek((position() / 512) * 512);
 }
 
 
-// find header boundaries, read important tags,
-// and let the caller know if this file requires a larger buffer
-int MediaFile::readHeader(void *buf, uint16_t nbyte) {
-  // setup tag buffer
-  buffer = (char*) buf;
-  seek(0);
+// find header boundaries, read important tags
+int MediaFile::readHeader(uint8_t *&buf) {
+  char header[48];
+  buffer = (uint8_t *)&header;
 
   // determine file type
-  read(buffer, 4);
-  if (!strncmp_P(buffer, PSTR("fLaC"), 4)) {
+  seek(0);
+  read(header, 4);
+  if (!strncmp_P(header, PSTR("fLaC"), 4)) {
     // FLAC with Vorbis comments
     readFlacHeader();
-    highBitRate = true;
+    flac = true;
   }
-  else if (!strncmp_P(buffer, PSTR("ID3"), 3)) {
+  else if (!strncmp_P(header, PSTR("ID3"), 3)) {
     // MP3 with ID3v2.x tags
-    readMp3Header(buffer[3]);
+    readMp3Header(header[3]);
   }
 
   // use file name if no title found
@@ -225,6 +229,37 @@ int MediaFile::readHeader(void *buf, uint16_t nbyte) {
   if (artist[0] == ' ') {
   }
 
-  return buffer - (char*) buf;
+  // copy header to cache
+  uint16_t siz = buffer - (uint8_t *)&header;
+  buffer = SdVolume::cacheClear();
+  memcpy(buffer, header, siz);
+
+  // return cache pointer
+  buf = buffer;
+  return siz;
 }
 
+
+bool MediaFile::isFlac() {
+  return flac;
+}
+
+
+// makes a block-aligned read from the current position
+// returns a pointer to the buffer and the number of bytes read
+int MediaFile::readBlock(uint8_t *&buf) {
+  uint32_t pos = position();
+  uint16_t rem = pos % 512;
+  uint16_t siz = flac ? 512 - rem : 32 - (rem % 32);
+
+  // ensure the block we need is in cache
+  read();
+  buf = buffer + rem;
+
+  if (!seek(pos + siz)) {
+    siz = size() - pos;
+    seek(size());
+  }
+
+  return siz;
+}

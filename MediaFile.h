@@ -16,12 +16,17 @@ class MediaFile : public File
     char title[24];
     char artist[24];
     char album[24];
-    bool highBitRate;
+    char year[4];
 
-    void operator= (const SDLib::File &file);
-    int readHeader(void *buf, uint16_t nbyte);
+    void operator= (const File &file);
+    int readHeader(uint8_t *&buf);
+    int readBlock(uint8_t *&buf);
+    bool isFlac();
 
   private:
+    bool flac;
+    uint8_t *buffer;
+
     void asciiStringCopy(char dst[], char src[], uint8_t dsize, uint8_t ssize);
     void readTag(char tag[], uint32_t size);
     void readTag(uint32_t size);

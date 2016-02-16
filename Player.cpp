@@ -294,6 +294,15 @@ void Player::preset(uint8_t memory) {
         Serial.println();
 #endif
         break;
+      case 4:
+#if (DEBUGMODE==1)
+        Serial.print(F("Year: "));
+        for (int i = 0; i < 4; i++) {
+          Serial.print(currentTrack.year[i]);
+        }
+        Serial.println();
+#endif
+        break;
     }
   } else {
     trackNext = presets[memory - 1];

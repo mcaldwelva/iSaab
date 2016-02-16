@@ -72,11 +72,10 @@ void VS1053::stopTrack() {
   sciWrite(SCI_MODE, SM_SDINEW | SM_CANCEL);
 
   // send endFillByte until cancel is accepted
+  uint8_t buffer[VS1053_BUFFER_SIZE];
   while (sciRead(SCI_MODE) & SM_CANCEL) {
-    ATOMIC_BLOCK(ATOMIC_FORCEON) {
-      memset(buffer, endFillByte, VS1053_SMALL_BUFFER);
-      sendData(buffer, VS1053_SMALL_BUFFER);
-    }
+      memset(buffer, endFillByte, VS1053_BUFFER_SIZE);
+      sendData(buffer, VS1053_BUFFER_SIZE);
   }
 
   // done
@@ -97,7 +96,8 @@ bool VS1053::startTrack() {
 
   // read header
   ATOMIC_BLOCK(ATOMIC_FORCEON) {
-    uint16_t bytesRead = currentTrack.readHeader(buffer, VS1053_LARGE_BUFFER);
+    uint8_t *buffer;
+    uint16_t bytesRead = currentTrack.readHeader(buffer);
     sendData(buffer, bytesRead);
   }
 
@@ -110,19 +110,18 @@ bool VS1053::startTrack() {
 
 // transfer as much data from file as needed to fill the card's internal buffer
 void VS1053::playTrack() {
-  int bytesRead;
-  size_t bufferSize = currentTrack.highBitRate ? VS1053_LARGE_BUFFER : VS1053_SMALL_BUFFER;
-
   // stay here as long as we need to
   while (state == Playing && currentTrack && readyForData()) {
-    // this is critical for FLAC
+    uint16_t bytesRead;
+
     ATOMIC_BLOCK(ATOMIC_FORCEON) {
-      bytesRead = currentTrack.read(buffer, bufferSize);
+      uint8_t *buffer;
+      bytesRead = currentTrack.readBlock(buffer);
       sendData(buffer, bytesRead);
     }
 
     // close the file if there's no more data to read
-    if (bytesRead < bufferSize) {
+    if (bytesRead == 0) {
       currentTrack.close();
     }
   }
@@ -141,7 +140,7 @@ void VS1053::skip(int secs) {
   long rate = sciRead(SCI_WRAM);
 
   // adjust rate based on codec
-  if (currentTrack.highBitRate) {
+  if (currentTrack.isFlac()) {
     rate <<= 2;
   } else {
     rate &= ~3;

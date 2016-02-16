@@ -10,8 +10,7 @@
 
 #include "MediaFile.h"
 
-#define VS1053_LARGE_BUFFER  512
-#define VS1053_SMALL_BUFFER  32
+#define VS1053_BUFFER_SIZE   32
 
 #define VS1053_XRESET        9    // VS1053 Reset pin (output)
 #define VS1053_XCS           7    // VS1053 SPI Control select pin (output)
@@ -104,10 +103,6 @@ class VS1053 {
 
     int skippedTime;
 };
-
-// use the top of the heap for temporary buffer
-extern int __heap_start, *__brkval;
-#define buffer ((uint8_t *)(!__brkval ? &__heap_start : __brkval))
 
 #endif // VS1053_H
 
