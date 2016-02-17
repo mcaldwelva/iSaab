@@ -100,8 +100,7 @@ void MediaFile::readTag(uint32_t size) {
 
 
 void MediaFile::readMp3Header(uint8_t ver) {
-  char buffer[4];
-  char tag[5];
+  char tag[4];
   uint32_t header_end;
   uint32_t tag_size = 1;
 
@@ -127,7 +126,7 @@ void MediaFile::readMp3Header(uint8_t ver) {
       }
 
       // skip flags
-      seek(position() + 2);
+      read(buffer, 2);
     } else {
       // v2.0 - v2.2
       read(tag, 3);
