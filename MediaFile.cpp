@@ -154,56 +154,60 @@ void MediaFile::readFlacHeader() {
   // keep "fLaC"
   buffer+= 4;
   
-  // search for comment block
+  // read metablocks
   do {
+    // block header
     read(buffer, 4);
     block_type = buffer[0] & 0x7F;
     last_block = buffer[0] & 0x80;
     block_size = LE8x3((buffer + 1));
 
-    // comment block
-    if (block_type == 4) {
-      // skip vendor comments
-      read(buffer, 4);
-      tag_size = BE8x4(buffer);
-      seek(position() + tag_size);
-  
-      // get number of other comments
-      read(buffer, 4);
-      tag_count = BE8x4(buffer);
-  
-      // search through comments
-      for (int i = 0; i < tag_count; i++) {
-        // read tag size
-        read(buffer, 4);
-        tag_size = BE8x4(buffer);
-  
-        // read tag data
-        readTag(tag_size);
-      }
-    } else {
-      // stream info block
-      if (block_type == 0) {
+    // block data
+    switch (block_type) {
+      case 0: // streaminfo
         // make this the last block
         buffer[0] |= 0x80;
         buffer+= 4;
         read(buffer, block_size);
         buffer+= block_size;
-      } else {
+        break;
+
+      case 4: // vorbis_comment
+        // skip vendor comments
+        read(buffer, 4);
+        tag_size = BE8x4(buffer);
+        seek(position() + tag_size);
+
+        // get number of other comments
+        read(buffer, 4);
+        tag_count = BE8x4(buffer);
+
+        // search through comments
+        for (int i = 0; i < tag_count; i++) {
+          // read tag size
+          read(buffer, 4);
+          tag_size = BE8x4(buffer);
+
+          // read tag data
+          readTag(tag_size);
+        }
+        break;
+
+      default:
         seek(position() + block_size);
-      }
+        break;
     }
   } while (!last_block);
 }
 
 
-// find header boundaries, read important tags
+// read important tags, return minimal header
 int MediaFile::readHeader(uint8_t *&buf) {
   char header[48];
   buffer = (uint8_t *)&header;
+  seek(0);
 
   // determine file type
-  seek(0);
   read(header, 4);
   if (!strncmp_P(header, PSTR("fLaC"), 4)) {
     // FLAC with Vorbis comments
