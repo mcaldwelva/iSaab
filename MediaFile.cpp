@@ -12,22 +12,32 @@
 #define LE8x3(x) (((uint32_t)((uint8_t)x[0])) << 16 | ((uint32_t)((uint8_t)x[1])) <<  8 | ((uint32_t)((uint8_t)x[2])))
 #define BE8x4(x) (((uint32_t)((uint8_t)x[3])) << 24 | ((uint32_t)((uint8_t)x[2])) << 16 | ((uint32_t)((uint8_t)x[1])) << 8 | ((uint32_t)((uint8_t)x[0])))
 
-// effectively the constructor
+
+// copy parent and reset this
 void MediaFile::operator= (const File &file) {
   File::operator=(file);
 
   flac = false;
-  memset(title, ' ', 24);
-  memset(album, ' ', 24);
-  memset(artist, ' ', 24);
+  for (short i = 0; i < 4; i++) {
+    tags[i] = "";
+  }
 }
 
+String MediaFile::getTag(uint8_t tag) {
+  String ret;
+
+  if (tag >= 1 && tag <= 4) {
+    ret = tags[tag - 1];
+  }
+
+  return ret;
+}
 
 // copy ascii/wide/unicode string to ascii
-void MediaFile::asciiStringCopy(char dst[], char src[], uint8_t dsize, uint8_t ssize) {
-  for (int i = 0, j = 0; i < ssize && j < dsize; i++) {
+void MediaFile::asciiStringCopy(String &dst, char src[], uint8_t dsize, uint8_t ssize) {
+  for (short i = 0, j = 0; i < ssize && j < dsize; i++) {
     if (32 <= src[i] && src[i] <= 126) {
-      dst[j++] = src[i];
+      dst += src[i];
     }
   }
 }
@@ -50,16 +60,16 @@ void MediaFile::readTag(char tag[], uint32_t size) {
   }
 
   if (!strncmp_P(tag, PSTR("TIT2"), 4) || !strncmp_P(tag, PSTR("TT2"), 3)) {
-    asciiStringCopy(title, buffer, 24, size);
+    asciiStringCopy(tags[Title], buffer, 24, size);
   }
   else if (!strncmp_P(tag, PSTR("TALB"), 4) || !strncmp_P(tag, PSTR("TAL"), 3)) {
-    asciiStringCopy(album, buffer, 24, size);
+    asciiStringCopy(tags[Album], buffer, 24, size);
   }
   else if (!strncmp_P(tag, PSTR("TPE1"), 4) || !strncmp_P(tag, PSTR("TP1"), 3)) {
-    asciiStringCopy(artist, buffer, 24, size);
+    asciiStringCopy(tags[Artist], buffer, 24, size);
   }
   else if (!strncmp_P(tag, PSTR("TYER"), 4) || !strncmp_P(tag, PSTR("TYE"), 3)) {
-    asciiStringCopy(year, buffer, 4, size);
+    asciiStringCopy(tags[Year], buffer, 4, size);
   }
 //  else if (!strncmp_P(tag, PSTR("XRVA"), 4) || !strncmp_P(tag, PSTR("RVA2"), 3)) {
 //  }
@@ -83,16 +93,16 @@ void MediaFile::readTag(uint32_t size) {
   }
 
   if (!strncasecmp_P(buffer, PSTR("TITLE="), 6)) {
-    asciiStringCopy(title, (buffer + 6), 24, size - 6);
+    asciiStringCopy(tags[Title], (buffer + 6), 24, size - 6);
   }
   else if (!strncasecmp_P(buffer, PSTR("ALBUM="), 6)) {
-    asciiStringCopy(album, (buffer + 6), 24, size - 6);
+    asciiStringCopy(tags[Album], (buffer + 6), 24, size - 6);
   }
   else if (!strncasecmp_P(buffer, PSTR("ARTIST="), 7)) {
-    asciiStringCopy(artist, (buffer + 7), 24, size - 7);
+    asciiStringCopy(tags[Artist], (buffer + 7), 24, size - 7);
   }
   else if (!strncasecmp_P(buffer, PSTR("DATE="), 5)) {
-    asciiStringCopy(year, (buffer + 5), 24, size - 5);
+    asciiStringCopy(tags[Year], (buffer + 5), 24, size - 5);
   }
 //  else if (!strncasecmp_P(buffer, PSTR("REPLAYGAIN_TRACK_GAIN="), 22)) {
 //  }
@@ -220,16 +230,8 @@ int MediaFile::readHeader(uint8_t *&buf) {
   }
 
   // use file name if no title found
-  if (title[0] == ' ') {
-    strcpy(title, name());
-  }
-
-  // use folder name if no album found
-  if (album[0] == ' ') {
-  }
-
-  // use parent folder name if no artist found
-  if (artist[0] == ' ') {
+  if (tags[Title].length() == 0) {
+    tags[Title] = name();
   }
 
   // copy header to cache
@@ -261,7 +263,7 @@ int MediaFile::readBlock(uint8_t *&buf) {
 
   if (!seek(pos + siz)) {
     siz = size() - pos;
-    seek(size());
+    seek(pos + siz);
   }
 
   return siz;

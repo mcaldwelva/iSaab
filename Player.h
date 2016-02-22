@@ -40,6 +40,7 @@ class Player : private VS1053
     void preset(uint8_t);
 
     void getStatus(uint8_t[]);
+    bool getText(uint8_t[]);
 
   private:
     void openNextTrack();
@@ -49,6 +50,7 @@ class Player : private VS1053
     volatile unsigned int trackNext;
     volatile bool shuffled;
     unsigned int presets[NUM_PRESETS];
+    short tag;
     unsigned short rapidCount;
 
     // filesystem stuff

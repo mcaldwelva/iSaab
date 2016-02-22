@@ -82,6 +82,7 @@ void CAN::begin(uint16_t speed)
 
   //Activamos Interrupcion de RX
   mcp2515_write_register(CANINTE, _BV(RX1IE) | _BV(RX0IE)); //Los dos buffers activan pin de interrupcion
+//  mcp2515_write_register(CANINTE, _BV(RX0IE)); // Only buffer 0 activates interrupt
 
   //Filtros
   //Bufer 0: Todos los msjes y Rollover=>Si buffer 0 lleno,envia a buffer 1

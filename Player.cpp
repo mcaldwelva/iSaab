@@ -18,6 +18,7 @@ Player::Player() {
   state = Off;
   depth = 0;
   rapidCount = 0;
+  tag = 0;
 
   // select the first track
   trackNum = 0;
@@ -128,6 +129,7 @@ void Player::loop() {
 
       openNextTrack();
       startTrack();
+      tag = abs(tag);
     }
   }
 }
@@ -225,12 +227,12 @@ void Player::nextDisc() {
 #endif
 
   if (shuffled) {
-    trackNext = RANDOM_TRACK;
+    tag = abs(tag) + 1;
+    if (tag > 4) tag = 0;
   } else {
     trackNext = path[depth].max;
+    stopTrack();
   }
-
-  stopTrack();
 }
 
 
@@ -266,44 +268,7 @@ void Player::preset(uint8_t memory) {
 #endif
 
   if (shuffled) {
-    switch (memory) {
-      case 1:
-#if (DEBUGMODE==1)
-        Serial.print(F("Title: "));
-        for (int i = 0; i < 24; i++) {
-          Serial.print(currentTrack.title[i]);
-        }
-        Serial.println();
-#endif
-        break;
-      case 2:
-#if (DEBUGMODE==1)
-        Serial.print(F("Album: "));
-        for (int i = 0; i < 24; i++) {
-          Serial.print(currentTrack.album[i]);
-        }
-        Serial.println();
-#endif
-        break;
-      case 3:
-#if (DEBUGMODE==1)
-        Serial.print(F("Artist: "));
-        for (int i = 0; i < 24; i++) {
-          Serial.print(currentTrack.artist[i]);
-        }
-        Serial.println();
-#endif
-        break;
-      case 4:
-#if (DEBUGMODE==1)
-        Serial.print(F("Year: "));
-        for (int i = 0; i < 4; i++) {
-          Serial.print(currentTrack.year[i]);
-        }
-        Serial.println();
-#endif
-        break;
-    }
+    tag = memory;
   } else {
     trackNext = presets[memory - 1];
     stopTrack();
@@ -426,6 +391,46 @@ void Player::getStatus(uint8_t data[]) {
   }
 
   data[1] = 0x00;
+}
+
+
+// generate text message for Saab
+bool Player::getText(uint8_t data[]) {
+  uint8_t id = data[0];
+  uint8_t row = data[2];
+
+  // get initial text pointer
+  String text = currentTrack.getTag(abs(tag));
+  if (state != Playing || text.length() == 0) return false;
+
+  // text offset according to row/msg id
+  int j = (row - 1) * 12;
+  j += abs(id - 2) * 5;
+
+  if (id == 2) data[0] |= 0x40;
+  data[1] = 0x96;
+  if (tag > 0) {
+    data[2] |= 0x80;
+  }
+
+  // copy text
+  for (int i = 3; i < (id == 0 ? 5 : 8); i++) {
+    char c = text[j++];
+    data[i] = c ? c : 0x20;
+  }
+
+  // specify tag id
+  if (id == 0) {
+    data[5] = 0x00;
+    data[6] = 0x00;
+    data[7] = 0x00;
+    if (row == 2) {
+      data[4] = abs(tag);
+      tag = -abs(tag);
+    }
+  }
+
+  return true;
 }
 
 

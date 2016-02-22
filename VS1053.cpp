@@ -73,9 +73,11 @@ void VS1053::stopTrack() {
 
   // send endFillByte until cancel is accepted
   uint8_t buffer[VS1053_BUFFER_SIZE];
+  memset(buffer, endFillByte, VS1053_BUFFER_SIZE);
   while (sciRead(SCI_MODE) & SM_CANCEL) {
-      memset(buffer, endFillByte, VS1053_BUFFER_SIZE);
+    ATOMIC_BLOCK(ATOMIC_FORCEON) {
       sendData(buffer, VS1053_BUFFER_SIZE);
+    }
   }
 
   // done

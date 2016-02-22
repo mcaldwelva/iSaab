@@ -13,21 +13,20 @@
 class MediaFile : public File
 {
   public:
-    char title[24];
-    char artist[24];
-    char album[24];
-    char year[4];
+    enum Tag : uint8_t { Title, Album, Artist, Year };
 
     void operator= (const File &file);
     int readHeader(uint8_t *&buf);
     int readBlock(uint8_t *&buf);
     bool isFlac();
+    String getTag(uint8_t tag);
 
   private:
     bool flac;
     uint8_t *buffer;
+    String tags[4];
 
-    void asciiStringCopy(char dst[], char src[], uint8_t dsize, uint8_t ssize);
+    void asciiStringCopy(String &dst, char src[], uint8_t dsize, uint8_t ssize);
     void readTag(char tag[], uint32_t size);
     void readTag(uint32_t size);
     void readFlacHeader();

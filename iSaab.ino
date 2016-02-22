@@ -66,6 +66,10 @@ void processMessage() {
       case RX_CDC_PRESENT:
         presenceRequest(msg);
         break;
+
+      case RX_SID_PRIORITY:
+        displayRequest(msg);
+        break;
     }
   }
 }
@@ -162,5 +166,45 @@ void controlRequest(CAN::msg &msg) {
   // get current status
   cdc.getStatus(msg.data);
   while (ibus.send(msg) == 0xff);
+}
+
+
+inline __attribute__((always_inline))
+void displayRequest(CAN::msg &msg) {
+  uint8_t row = msg.data[0];
+  uint8_t pri = msg.data[1];
+
+  if (row > 0) {
+    if (cdc.getText(msg.data)) {
+      if (pri == 0x0e) {
+        // send text
+        msg.id = TX_SID_TEXT;
+
+        for (int8_t i = 2; i >= 0 ; i--) {
+          msg.data[0] = i;
+          msg.data[2] = row;
+          cdc.getText(msg.data);
+          while (ibus.send(msg) == 0xff);
+        }
+
+        msg.data[2] = 0x05; // keep
+      } else {
+        msg.data[2] = 0x03; // request
+      }
+    } else {
+      msg.data[2] = 0xff; // decline
+    }
+
+    // display request
+    msg.id = TX_SID_REQUEST;
+    msg.data[0] = 0x1f; // device
+    msg.data[1] = row;
+    msg.data[3] = 0x0e; // priority
+    msg.data[4] = 0x00;
+    msg.data[5] = 0x00;
+    msg.data[6] = 0x00;
+    msg.data[7] = 0x00;
+    while (ibus.send(msg) == 0xff);
+  }
 }
 
