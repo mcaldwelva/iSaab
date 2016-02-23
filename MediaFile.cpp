@@ -18,7 +18,7 @@ void MediaFile::operator= (const File &file) {
   File::operator=(file);
 
   flac = false;
-  for (short i = 0; i < 4; i++) {
+  for (uint8_t i = 0; i < 4; i++) {
     tags[i] = "";
   }
 }
@@ -35,7 +35,7 @@ String MediaFile::getTag(uint8_t tag) {
 
 // copy ascii/wide/unicode string to ascii
 void MediaFile::asciiStringCopy(String &dst, char src[], uint8_t dsize, uint8_t ssize) {
-  for (short i = 0, j = 0; i < ssize && j < dsize; i++) {
+  for (uint8_t i = 0, j = 0; i < ssize && j < dsize; i++) {
     if (32 <= src[i] && src[i] <= 126) {
       dst += src[i];
     }
@@ -111,7 +111,7 @@ void MediaFile::readTag(uint32_t size) {
 
 void MediaFile::readMp3Header(uint8_t ver) {
   char tag[4];
-  uint32_t header_end;
+  long header_end;
   uint32_t tag_size = 1;
 
   // skip minor version & extended header info

@@ -18,7 +18,10 @@ Player::Player() {
   state = Off;
   depth = 0;
   rapidCount = 0;
-  tag = 0;
+
+  // clear the display
+  display.tag = 0;
+  display.text[0] = '\0';
 
   // select the first track
   trackNum = 0;
@@ -94,6 +97,9 @@ void Player::end() {
     // resume current track on start-up
     trackNext = trackNum;
 
+    // clear the display
+    display.text[0] = '\0';
+
     // collapse path structure
     stopTrack();
     while (depth > 0) {
@@ -129,7 +135,7 @@ void Player::loop() {
 
       openNextTrack();
       startTrack();
-      tag = abs(tag);
+      updateText();;
     }
   }
 }
@@ -227,8 +233,8 @@ void Player::nextDisc() {
 #endif
 
   if (shuffled) {
-    tag = abs(tag) + 1;
-    if (tag > 4) tag = 0;
+    display.tag = (display.tag + 1) % (NUM_PRESETS - 1);
+    updateText();
   } else {
     trackNext = path[depth].max;
     stopTrack();
@@ -268,7 +274,8 @@ void Player::preset(uint8_t memory) {
 #endif
 
   if (shuffled) {
-    tag = memory;
+    display.tag = memory;
+    updateText();
   } else {
     trackNext = presets[memory - 1];
     stopTrack();
@@ -394,43 +401,24 @@ void Player::getStatus(uint8_t data[]) {
 }
 
 
-// generate text message for Saab
-bool Player::getText(uint8_t data[]) {
-  uint8_t id = data[0];
-  uint8_t row = data[2];
+// get text for display
+char *Player::getText() {
+  return display.text;
+}
 
-  // get initial text pointer
-  String text = currentTrack.getTag(abs(tag));
-  if (state != Playing || text.length() == 0) return false;
 
-  // text offset according to row/msg id
-  int j = (row - 1) * 12;
+// prepare text for Saab display
+void Player::updateText() {
+  String text = currentTrack.getTag(display.tag);
+  uint8_t i, j;
+
+  for (i = 0, j = 0; i < 12; i++, j++) {
+    display.text[i] = text[j];
+  }
   if (text[j] == 0x20) j++;
-  j += abs(id - 2) * 5;
-
-  // begin message flag
-  if (id == 2) data[0] |= 0x40;
-
-  // address to SID
-  data[1] = 0x96;
-
-  // new text flag
-  if (tag > 0) {
-    data[2] |= 0x80;
+  for (; i < 23; i++, j++) {
+    display.text[i] = text[j];
   }
-
-  // copy text
-  for (int i = 3; i < 8; i++) {
-    char c = text[j++];
-  }
-
-  // add tag id
-  if (id == 0 && row == 2) {
-    data[4] = abs(tag);
-    tag = -abs(tag);
-  }
-
-  return true;
 }
 
 

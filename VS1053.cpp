@@ -75,9 +75,7 @@ void VS1053::stopTrack() {
   uint8_t buffer[VS1053_BUFFER_SIZE];
   memset(buffer, endFillByte, VS1053_BUFFER_SIZE);
   while (sciRead(SCI_MODE) & SM_CANCEL) {
-    ATOMIC_BLOCK(ATOMIC_FORCEON) {
-      sendData(buffer, VS1053_BUFFER_SIZE);
-    }
+    sendData(buffer, VS1053_BUFFER_SIZE);
   }
 
   // done
@@ -97,11 +95,9 @@ bool VS1053::startTrack() {
   sciWrite(SCI_DECODETIME, 0x00);
 
   // read header
-  ATOMIC_BLOCK(ATOMIC_FORCEON) {
-    uint8_t *buffer;
-    uint16_t bytesRead = currentTrack.readHeader(buffer);
-    sendData(buffer, bytesRead);
-  }
+  uint8_t *buffer;
+  uint16_t bytesRead = currentTrack.readHeader(buffer);
+  sendData(buffer, bytesRead);
 
   // turn analog up
   setVolume(0x00, 0x00);

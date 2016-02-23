@@ -173,17 +173,29 @@ inline __attribute__((always_inline))
 void displayRequest(CAN::msg &msg) {
   uint8_t row = msg.data[0];
   uint8_t pri = msg.data[1];
+  char *text = cdc.getText();
 
   if (row > 0) {
-    if (cdc.getText(msg.data)) {
+    if (text[0]) {
       if (pri == 0x0e) {
         // send text
         msg.id = TX_SID_TEXT;
 
-        for (int8_t i = 2; i >= 0 ; i--) {
-          msg.data[0] = i;
+        // prepare messages from text
+        for (int8_t id = 2; id >= 0 ; id--) {
+          msg.data[0] = id;
+          if (id == 2) msg.data[0] |= 0x40;
+          msg.data[1] = 0x96;
           msg.data[2] = row;
-          cdc.getText(msg.data);
+          msg.data[2] |= 0x80;
+
+          // text offset according to row/msg id
+          int j = (row - 1) * 12;
+          j += abs(id - 2) * 5;
+          for (int i = 3; i < (id ? 8 : 5); i++) {
+            msg.data[i] = text[j++];
+          }
+
           while (ibus.send(msg) == 0xff);
         }
 
