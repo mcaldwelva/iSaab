@@ -405,29 +405,29 @@ bool Player::getText(uint8_t data[]) {
 
   // text offset according to row/msg id
   int j = (row - 1) * 12;
+  if (text[j] == 0x20) j++;
   j += abs(id - 2) * 5;
 
+  // begin message flag
   if (id == 2) data[0] |= 0x40;
+
+  // address to SID
   data[1] = 0x96;
+
+  // new text flag
   if (tag > 0) {
     data[2] |= 0x80;
   }
 
   // copy text
-  for (int i = 3; i < (id == 0 ? 5 : 8); i++) {
+  for (int i = 3; i < 8; i++) {
     char c = text[j++];
-    data[i] = c ? c : 0x20;
   }
 
-  // specify tag id
-  if (id == 0) {
-    data[5] = 0x00;
-    data[6] = 0x00;
-    data[7] = 0x00;
-    if (row == 2) {
-      data[4] = abs(tag);
-      tag = -abs(tag);
-    }
+  // add tag id
+  if (id == 0 && row == 2) {
+    data[4] = abs(tag);
+    tag = -abs(tag);
   }
 
   return true;
