@@ -30,6 +30,7 @@ class CAN
     uint8_t available();
     void setMode(uint8_t mode);
     void setFilters(const uint16_t filters[] PROGMEM, const uint16_t masks[] PROGMEM);
+    void setLowPriorityInterrupts(bool enabled);
 
   private:
     void spiwrite(uint8_t);

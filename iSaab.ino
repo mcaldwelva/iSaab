@@ -89,11 +89,13 @@ void presenceRequest(CAN::msg &msg) {
       break;
     case 0x03: // power on
       msg.data[3] = 0x03;
+      ibus.setLowPriorityInterrupts(true);
       cdc.begin();
       break;
     case 0x08: // power off
       msg.data[3] = 0x19;
       cdc.end();
+      ibus.setLowPriorityInterrupts(false);
       break;
   }
   msg.data[0] = 0x32;
@@ -180,30 +182,37 @@ void displayRequest(CAN::msg &msg) {
       if (pri == 0x0e) {
         // send text
         msg.id = TX_SID_TEXT;
+        msg.data[1] = 0x96;
 
         // prepare messages from text
+        for (uint8_t k = 0, j = (row - 1) * 12; k < 2; k++)
         for (int8_t id = 2; id >= 0 ; id--) {
           msg.data[0] = id;
           if (id == 2) msg.data[0] |= 0x40;
-          msg.data[1] = 0x96;
           msg.data[2] = row;
-          msg.data[2] |= 0x80;
-
-          // text offset according to row/msg id
-          int j = (row - 1) * 12;
-          j += abs(id - 2) * 5;
-          for (int i = 3; i < (id ? 8 : 5); i++) {
-            msg.data[i] = text[j++];
+          if (k == 0) msg.data[2] |= 0x80;
+          msg.data[3] = text[j++];
+          msg.data[4] = text[j++];
+          if (id != 0) {
+            msg.data[5] = text[j++];
+            msg.data[6] = text[j++];
+            msg.data[7] = text[j++];
+          } else {
+            msg.data[5] = 0x00;
+            msg.data[6] = 0x00;
+            msg.data[7] = 0x00;
           }
-
           while (ibus.send(msg) == 0xff);
         }
 
+        // keep display
         msg.data[2] = 0x05; // keep
       } else {
+        // want display
         msg.data[2] = 0x03; // request
       }
     } else {
+      // no display
       msg.data[2] = 0xff; // decline
     }
 

@@ -8,7 +8,7 @@
 #define MEDIAFILE_H
 #include <SD.h>
 
-#define TAG_BUFFER 50
+#define TAG_BUFFER 64
 
 class MediaFile : public File
 {

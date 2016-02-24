@@ -81,8 +81,7 @@ void CAN::begin(uint16_t speed)
   mcp2515_write_register(CNF3, cnf3);
 
   //Activamos Interrupcion de RX
-  mcp2515_write_register(CANINTE, _BV(RX1IE) | _BV(RX0IE)); //Los dos buffers activan pin de interrupcion
-//  mcp2515_write_register(CANINTE, _BV(RX0IE)); // Only buffer 0 activates interrupt
+  mcp2515_write_register(CANINTE, _BV(RX0IE)); // Only buffer 0 activates interrupt
 
   //Filtros
   //Bufer 0: Todos los msjes y Rollover=>Si buffer 0 lleno,envia a buffer 1
@@ -392,6 +391,13 @@ void CAN::setFilters(const uint16_t filters[] PROGMEM, const uint16_t masks[] PR
   setMode(NORMAL_MODE);
 }
 // ----------------------------------------------------------------------------
+
+// enable/disable interrupts for low priority messages
+void CAN::setLowPriorityInterrupts(bool enabled)
+{
+  mcp2515_bit_modify(CANINTE, _BV(RX1IE), enabled ? 0xff : 0x00);
+}
+
 
 
 

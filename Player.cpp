@@ -18,10 +18,7 @@ Player::Player() {
   state = Off;
   depth = 0;
   rapidCount = 0;
-
-  // clear the display
   display.tag = 0;
-  display.text[0] = '\0';
 
   // select the first track
   trackNum = 0;
@@ -98,7 +95,7 @@ void Player::end() {
     trackNext = trackNum;
 
     // clear the display
-    display.text[0] = '\0';
+    updateText();
 
     // collapse path structure
     stopTrack();
@@ -135,7 +132,7 @@ void Player::loop() {
 
       openNextTrack();
       startTrack();
-      updateText();;
+      updateText();
     }
   }
 }
@@ -409,9 +406,13 @@ char *Player::getText() {
 
 // prepare text for Saab display
 void Player::updateText() {
-  String text = currentTrack.getTag(display.tag);
-  uint8_t i, j;
+  String text;
 
+  if (state == Playing) {
+    text = currentTrack.getTag(display.tag);
+  }
+
+  uint8_t i, j;
   for (i = 0, j = 0; i < 12; i++, j++) {
     display.text[i] = text[j];
   }
