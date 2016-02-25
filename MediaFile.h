@@ -15,11 +15,13 @@ class MediaFile : public File
   public:
     enum Tag : uint8_t { Title, Album, Artist, Year };
 
-    void operator= (const File &file);
+    MediaFile();
+    void operator=(const File &file);
     int readHeader(uint8_t *&buf);
     int readBlock(uint8_t *&buf);
     bool isFlac();
     String getTag(uint8_t tag);
+    void close();
 
   private:
     bool flac;

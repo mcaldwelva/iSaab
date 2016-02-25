@@ -173,53 +173,56 @@ void controlRequest(CAN::msg &msg) {
 
 inline __attribute__((always_inline))
 void displayRequest(CAN::msg &msg) {
-  uint8_t row = msg.data[0];
-  uint8_t pri = msg.data[1];
   char *text = cdc.getText();
 
-  if (row > 0) {
+  if (msg.data[0] == 0x00) {
     if (text[0]) {
-      if (pri == 0x0e) {
+      if (msg.data[1] == 0x0e) {
         // send text
         msg.id = TX_SID_TEXT;
         msg.data[1] = 0x96;
 
-        // prepare messages from text
-        for (uint8_t k = 0, j = (row - 1) * 12; k < 2; k++)
-        for (int8_t id = 2; id >= 0 ; id--) {
+        // repeat a new message
+//        for (uint8_t n = (text[23] & 0x80) ? 1 : 0; n < 2; n++)
+        for (int8_t id = 5, i = 0; id >= 0 ; id--) {
           msg.data[0] = id;
-          if (id == 2) msg.data[0] |= 0x40;
-          msg.data[2] = row;
-          if (k == 0) msg.data[2] |= 0x80;
-          msg.data[3] = text[j++];
-          msg.data[4] = text[j++];
-          if (id != 0) {
-            msg.data[5] = text[j++];
-            msg.data[6] = text[j++];
-            msg.data[7] = text[j++];
+          if (id == 5) msg.data[0] |= 0x40;
+
+          msg.data[2] = (id < 3) ? 2 : 1;
+//          if (n == 0) msg.data[2] |= 0x80;
+          if (text[23] & 0x80) msg.data[2] |= 0x80;
+
+          // copy text
+          msg.data[3] = text[i++];
+          msg.data[4] = text[i++];
+          if (id == 0) msg.data[4] &= 0x7f;
+          if (id % 3) {
+            msg.data[5] = text[i++];
+            msg.data[6] = text[i++];
+            msg.data[7] = text[i++];
           } else {
-            msg.data[5] = 0x00;
-            msg.data[6] = 0x00;
-            msg.data[7] = 0x00;
+            msg.data[5] = 0x20;
+            msg.data[6] = 0x20;
+            msg.data[7] = 0x20;
           }
           while (ibus.send(msg) == 0xff);
         }
 
         // keep display
-        msg.data[2] = 0x05; // keep
+        msg.data[2] = 0x05;
       } else {
         // want display
-        msg.data[2] = 0x03; // request
+        msg.data[2] = 0x03;
       }
     } else {
       // no display
-      msg.data[2] = 0xff; // decline
+      msg.data[2] = 0xff;
     }
 
     // display request
     msg.id = TX_SID_REQUEST;
     msg.data[0] = 0x1f; // device
-    msg.data[1] = row;
+    msg.data[1] = 0x00; // row
     msg.data[3] = 0x0e; // priority
     msg.data[4] = 0x00;
     msg.data[5] = 0x00;

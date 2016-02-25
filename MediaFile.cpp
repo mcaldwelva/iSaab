@@ -13,14 +13,14 @@
 #define BE8x4(x) (((uint32_t)((uint8_t)x[3])) << 24 | ((uint32_t)((uint8_t)x[2])) << 16 | ((uint32_t)((uint8_t)x[1])) << 8 | ((uint32_t)((uint8_t)x[0])))
 
 
-// copy parent and reset this
-void MediaFile::operator= (const File &file) {
-  File::operator=(file);
-
+MediaFile::MediaFile() {
   flac = false;
-  for (uint8_t i = 0; i < 4; i++) {
-    tags[i] = "";
-  }
+  buffer = NULL;
+}
+
+
+void MediaFile::operator=(const File &file) {
+  File::operator=(file);
 }
 
 String MediaFile::getTag(uint8_t tag) {
@@ -268,3 +268,17 @@ int MediaFile::readBlock(uint8_t *&buf) {
 
   return siz;
 }
+
+
+// reset properties on closing
+void MediaFile::close() {
+  flac = false;
+  buffer = NULL;
+
+  for (uint8_t i = 0; i < 4; i++) {
+    tags[i] = "";
+  }
+
+  File::close();
+}
+

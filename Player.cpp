@@ -124,6 +124,7 @@ void Player::loop() {
 #if (DEBUGMODE==1)
       Serial.println(F("loop: nothing playing"));
 #endif
+      updateText();
 
       // get the next track if one hasn't already been selected
       if (trackNext == UNKNOWN) {
@@ -230,7 +231,7 @@ void Player::nextDisc() {
 #endif
 
   if (shuffled) {
-    display.tag = (display.tag + 1) % (NUM_PRESETS - 1);
+    display.tag = (abs(display.tag) + 1) % (NUM_PRESETS - 1);
     updateText();
   } else {
     trackNext = path[depth].max;
@@ -271,7 +272,11 @@ void Player::preset(uint8_t memory) {
 #endif
 
   if (shuffled) {
-    display.tag = memory;
+    if (memory == abs(display.tag)) {
+      display.tag = 0;
+    } else {
+      display.tag = memory;
+    }
     updateText();
   } else {
     trackNext = presets[memory - 1];
@@ -400,6 +405,7 @@ void Player::getStatus(uint8_t data[]) {
 
 // get text for display
 char *Player::getText() {
+  display.tag = -abs(display.tag);
   return display.text;
 }
 
@@ -409,16 +415,19 @@ void Player::updateText() {
   String text;
 
   if (state == Playing) {
+    display.tag = abs(display.tag);
     text = currentTrack.getTag(display.tag);
-  }
 
-  uint8_t i, j;
-  for (i = 0, j = 0; i < 12; i++, j++) {
-    display.text[i] = text[j];
-  }
-  if (text[j] == 0x20) j++;
-  for (; i < 23; i++, j++) {
-    display.text[i] = text[j];
+    uint8_t i, j;
+    for (i = 0, j = 0; i < 12; i++, j++) {
+      display.text[i] = text[j] ? text[j] : 0x20;
+    }
+    if (text[j] == 0x20) j++;
+    for (; i < 23; i++, j++) {
+      display.text[i] = text[j] ? text[j] : 0x20;
+    }
+  } else {
+    display.text[0] = '\0';
   }
 }
 
