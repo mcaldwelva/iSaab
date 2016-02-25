@@ -94,11 +94,11 @@ void Player::end() {
     // resume current track on start-up
     trackNext = trackNum;
 
-    // clear the display
-    updateText();
-
-    // collapse path structure
+    // close any open file
     stopTrack();
+    updateText();
+    
+    // collapse path structure
     while (depth > 0) {
       path[depth].dir.close();
       depth--;
@@ -417,17 +417,15 @@ void Player::updateText() {
   if (state == Playing) {
     display.tag = abs(display.tag);
     text = currentTrack.getTag(display.tag);
+  }
 
-    uint8_t i, j;
-    for (i = 0, j = 0; i < 12; i++, j++) {
-      display.text[i] = text[j] ? text[j] : 0x20;
-    }
-    if (text[j] == 0x20) j++;
-    for (; i < 23; i++, j++) {
-      display.text[i] = text[j] ? text[j] : 0x20;
-    }
-  } else {
-    display.text[0] = '\0';
+  uint8_t i, j;
+  for (i = 0, j = 0; i < 12; i++, j++) {
+    display.text[i] = text[j];
+  }
+  if (text[j] == 0x20) j++;
+  for (; i < 23; i++, j++) {
+    display.text[i] = text[j] ? text[j] : 0x20;
   }
 }
 

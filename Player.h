@@ -56,7 +56,7 @@ class Player : private VS1053
     void updateText();
     struct {
       char text[23];
-      uint8_t tag;
+      volatile uint8_t tag;
     } display;
 
     // filesystem stuff

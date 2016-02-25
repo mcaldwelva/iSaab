@@ -24,13 +24,12 @@ void MediaFile::operator=(const File &file) {
 }
 
 String MediaFile::getTag(uint8_t tag) {
-  String ret;
-
   if (tag >= 1 && tag <= 4) {
-    ret = tags[tag - 1];
+    return tags[tag - 1];
+  } else {
+    String empty;
+    return empty;
   }
-
-  return ret;
 }
 
 // copy ascii/wide/unicode string to ascii

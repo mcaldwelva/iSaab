@@ -183,14 +183,13 @@ void displayRequest(CAN::msg &msg) {
         msg.data[1] = 0x96;
 
         // repeat a new message
-//        for (uint8_t n = (text[23] & 0x80) ? 1 : 0; n < 2; n++)
+        for (uint8_t n = (text[23] & 0x80) ? 1 : 0; n < 2; n++)
         for (int8_t id = 5, i = 0; id >= 0 ; id--) {
           msg.data[0] = id;
           if (id == 5) msg.data[0] |= 0x40;
 
           msg.data[2] = (id < 3) ? 2 : 1;
-//          if (n == 0) msg.data[2] |= 0x80;
-          if (text[23] & 0x80) msg.data[2] |= 0x80;
+          if (n == 0) msg.data[2] |= 0x80;
 
           // copy text
           msg.data[3] = text[i++];
