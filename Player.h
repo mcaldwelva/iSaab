@@ -40,7 +40,7 @@ class Player : private VS1053
     void preset(uint8_t memory);
 
     void getStatus(uint8_t data[]);
-    char* getText(int8_t &isNew);
+    char* getText(int8_t &haveText);
 
   private:
     void openNextTrack();

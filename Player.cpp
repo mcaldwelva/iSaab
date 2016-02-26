@@ -407,9 +407,9 @@ void Player::getStatus(uint8_t data[]) {
 
 
 // get text for display
-char *Player::getText(int8_t &isNew) {
-  isNew = display.tag;
-  display.tag = -abs(display.tag);
+char *Player::getText(int8_t &haveText) {
+  haveText = display.text[0] ? display.tag : 0;
+  display.tag = abs(display.tag);
   return display.text;
 }
 
@@ -420,8 +420,7 @@ void Player::updateText() {
   String text;
 
   if (state == Playing) {
-    display.tag = abs(display.tag);
-    text = currentTrack.getTag(display.tag);
+    text = currentTrack.getTag(abs(display.tag));
   }
 
   ATOMIC_BLOCK(ATOMIC_FORCEON) {
@@ -432,6 +431,7 @@ void Player::updateText() {
     for (; i < 23; i++, j++) {
       display.text[i] = text[j] ? text[j] : 0x20;
     }
+    display.tag = -abs(display.tag);
   }
 }
 
