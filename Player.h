@@ -49,7 +49,7 @@ class Player : private VS1053
     uint16_t trackNum;
     volatile uint16_t trackNext;
     volatile bool shuffled;
-    uint8_t presets[NUM_PRESETS];
+    uint16_t presets[NUM_PRESETS];
     uint8_t rapidCount;
 
     // display stuff
