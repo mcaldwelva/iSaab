@@ -46,7 +46,7 @@ void MediaFile::asciiStringCopy(String &dst, char src[], uint8_t dsize, uint8_t 
 inline __attribute__((always_inline))
 void MediaFile::readTag(char tag[], uint32_t size) {
   char buffer[TAG_BUFFER];
-  long skip;
+  int32_t skip;
 
   // read the tag data
   skip = size - TAG_BUFFER;
@@ -79,7 +79,7 @@ void MediaFile::readTag(char tag[], uint32_t size) {
 inline __attribute__((always_inline))
 void MediaFile::readTag(uint32_t size) {
   char buffer[TAG_BUFFER];
-  long skip;
+  int32_t skip;
 
   // read the tag data
   skip = size - TAG_BUFFER;
@@ -110,7 +110,7 @@ void MediaFile::readTag(uint32_t size) {
 
 void MediaFile::readMp3Header(uint8_t ver) {
   char tag[4];
-  long header_end;
+  uint32_t header_end;
   uint32_t tag_size = 1;
 
   // skip minor version & extended header info

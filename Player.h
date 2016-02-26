@@ -37,39 +37,38 @@ class Player : private VS1053
     void nextTrack();
     void prevTrack();
     void nextDisc();
-    void preset(uint8_t);
+    void preset(uint8_t memory);
 
-    void getStatus(uint8_t[]);
-    char* getText();
+    void getStatus(uint8_t data[]);
+    char* getText(int8_t &isNew);
 
   private:
     void openNextTrack();
-    void readPresets(const __FlashStringHelper*);
+    void readPresets(const __FlashStringHelper* fileName);
 
-    unsigned int trackNum;
-    volatile unsigned int trackNext;
+    uint16_t trackNum;
+    volatile uint16_t trackNext;
     volatile bool shuffled;
-    unsigned int presets[NUM_PRESETS];
-    unsigned short rapidCount;
+    uint8_t presets[NUM_PRESETS];
+    uint8_t rapidCount;
 
     // display stuff
     void updateText();
     struct {
       char text[23];
-      volatile uint8_t tag;
+      volatile int8_t tag;
     } display;
 
     // filesystem stuff
     void dumpPath();
     struct {
       File dir;
-      unsigned int folder;
-      unsigned int min;
-      unsigned int max;
+      uint16_t folder;
+      uint16_t min;
+      uint16_t max;
     } path[MAX_DEPTH];
-    short depth;
+    int8_t depth;
 };
 
-#endif
-
+#endif // Player.h
 

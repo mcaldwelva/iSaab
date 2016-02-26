@@ -82,11 +82,11 @@ class VS1053 {
     void stopTrack();
 
     uint16_t trackTime();
-    void skip(int);
+    void skip(int16_t secs);
 
   protected:
-    void setVolume(uint8_t, uint8_t);
-    bool loadPlugin(const __FlashStringHelper*);
+    void setVolume(uint8_t left, uint8_t right);
+    bool loadPlugin(const __FlashStringHelper* fileName);
 
     enum State : uint8_t { Off = 0x00, Standby = 0x30, Playing = 0x40, Paused = 0x50, Rapid = 0x60 };
     volatile State state;
@@ -94,14 +94,14 @@ class VS1053 {
 
   private:
     bool readyForData();
-    void sendData(uint8_t[], uint16_t);
+    void sendData(uint8_t data[], uint16_t len);
 
-    uint16_t sciRead(uint8_t);
-    void sciWrite(uint8_t, uint16_t);
-    void spiwrite(uint8_t);
+    uint16_t sciRead(uint8_t addr);
+    void sciWrite(uint8_t addr, uint16_t data);
+    void spiwrite(uint8_t c);
     uint8_t spiread();
 
-    int skippedTime;
+    int16_t skippedTime;
 };
 
 #endif // VS1053_H

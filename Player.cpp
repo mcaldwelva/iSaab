@@ -41,8 +41,8 @@ void Player::setup() {
   VS1053::setup();
 
   // initialize shuffler
-  unsigned long seed = 0;
-  for (int i = 0; i < 32; i++) {
+  uint32_t seed = 0;
+  for (uint8_t i = 0; i < 32; i++) {
     seed <<= 1;
     seed |= analogRead(8) & 1;
   }
@@ -145,6 +145,7 @@ void Player::standby() {
 #endif
   if (state != Off) {
     state = Standby;
+    updateText();
   }
 }
 
@@ -155,6 +156,7 @@ void Player::pause() {
 #endif
   if (state == Playing) {
     state = Paused;
+    updateText();
   }
 }
 
@@ -165,6 +167,7 @@ void Player::resume() {
 #endif
   if (state != Off) {
     state = Playing;
+    updateText();
   }
 }
 
@@ -248,7 +251,7 @@ void Player::readPresets(const __FlashStringHelper* fileName) {
   // open the file
   File file = SD.open(fileName);
   if (file) {
-    short i = 0;
+    uint8_t i = 0;
     while (i < NUM_PRESETS && file.available()) {
       uint8_t c = file.read() - '0';
       if (c <= 9) {
@@ -289,7 +292,7 @@ void Player::rewind() {
 #if (DEBUGMODE==1)
   Serial.println(F("REWIND"));
 #endif
-  int seconds;
+  int8_t seconds;
 
   if (rapidCount >= 15) {
     seconds = -12;
@@ -307,7 +310,7 @@ void Player::forward() {
 #if (DEBUGMODE==1)
   Serial.println(F("FAST FORWARD"));
 #endif
-  int seconds;
+  int8_t seconds;
 
   if (rapidCount >= 15) {
     seconds = +10;
@@ -404,7 +407,8 @@ void Player::getStatus(uint8_t data[]) {
 
 
 // get text for display
-char *Player::getText() {
+char *Player::getText(int8_t &isNew) {
+  isNew = display.tag;
   display.tag = -abs(display.tag);
   return display.text;
 }
@@ -412,6 +416,7 @@ char *Player::getText() {
 
 // prepare text for Saab display
 void Player::updateText() {
+  uint8_t i, j;
   String text;
 
   if (state == Playing) {
@@ -419,13 +424,14 @@ void Player::updateText() {
     text = currentTrack.getTag(display.tag);
   }
 
-  uint8_t i, j;
-  for (i = 0, j = 0; i < 12; i++, j++) {
-    display.text[i] = text[j];
-  }
-  if (text[j] == 0x20) j++;
-  for (; i < 23; i++, j++) {
-    display.text[i] = text[j] ? text[j] : 0x20;
+  ATOMIC_BLOCK(ATOMIC_FORCEON) {
+    for (i = 0, j = 0; i < 12; i++, j++) {
+      display.text[i] = text[j];
+    }
+    if (text[j] == 0x20) j++;
+    for (; i < 23; i++, j++) {
+      display.text[i] = text[j] ? text[j] : 0x20;
+    }
   }
 }
 
@@ -451,8 +457,8 @@ void Player::dumpPath() {
 // find the new track number on the file system
 void Player::openNextTrack() {
   File entry;
-  unsigned int file_count;
-  unsigned int dir_count;
+  uint16_t file_count;
+  uint16_t dir_count;
 
 #if (DEBUGMODE==1)
   Serial.print(F("DISCOVER: "));

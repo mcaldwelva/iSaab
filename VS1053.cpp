@@ -127,7 +127,7 @@ void VS1053::playTrack() {
 
 
 // skip the specified number of seconds
-void VS1053::skip(int secs) {
+void VS1053::skip(int16_t secs) {
   // check if the card will let us jump now
   if (sciRead(SCI_STATUS) & SS_DO_NOT_JUMP) {
     return;
@@ -212,7 +212,7 @@ void VS1053::sendData(uint8_t data[], uint16_t len) {
 #endif
   fastDigitalWrite(VS1053_XDCS, LOW);
 
-  for (int i = 0; i < len; i++) {
+  for (uint16_t i = 0; i < len; i++) {
     // when DREQ is high, it's safe to send 32 bytes
     if (!(i & 31)) while (!readyForData());
     spiwrite(data[i]);
