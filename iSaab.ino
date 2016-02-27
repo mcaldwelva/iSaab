@@ -183,13 +183,12 @@ void displayRequest(CAN::msg &msg) {
         msg.id = TX_SID_TEXT;
         msg.data[1] = 0x96;
 
-        // repeat a new message
         for (int8_t id = 5, i = 0; id >= 0 ; id--) {
           msg.data[0] = id;
           if (id == 5) msg.data[0] |= 0x40;
 
           msg.data[2] = (id < 3) ? 2 : 1;
-          if (wanted > 0) msg.data[2] |= 0x80;
+          if (wanted < 0) msg.data[2] |= 0x80;
 
           // copy text
           msg.data[3] = text[i++];
@@ -206,15 +205,12 @@ void displayRequest(CAN::msg &msg) {
           while (ibus.send(msg) == 0xff);
         }
 
-        // keep display
-        msg.data[2] = 0x05;
+        msg.data[2] = 0x05; // keep
       } else {
-        // want display
-        msg.data[2] = 0x03;
+        msg.data[2] = 0x03; // want
       }
     } else {
-      // no display
-      msg.data[2] = 0xff;
+      msg.data[2] = 0xff; // done
     }
 
     // display request
