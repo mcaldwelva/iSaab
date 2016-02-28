@@ -24,8 +24,8 @@ void MediaFile::operator=(const File &file) {
 }
 
 String MediaFile::getTag(uint8_t tag) {
-  if (tag >= 1 && tag <= 4) {
-    return tags[tag - 1];
+  if (tag <= Year) {
+    return tags[tag];
   } else {
     String empty;
     return empty;
@@ -210,6 +210,53 @@ void MediaFile::readFlacHeader() {
 }
 
 
+void MediaFile::readOggHeader() {
+  uint8_t seg_count;
+  uint16_t seg_size;
+  uint32_t tag_count;
+  uint32_t tag_size;
+
+  seek(position() + 22);
+  seg_count = read();
+  read(buffer, seg_count);
+
+  seg_size = 0;
+  for (int i = 0; i < seg_count; i++) {
+    seg_size += (uint8_t) buffer[i];
+  }
+  seek(position() + seg_size);
+
+  read(buffer, 4);
+  if (!strncmp_P((char *)buffer, PSTR("OggS"), 4)) {
+    seek(position() + 22);
+    seg_count = read();
+    seek(position() + seg_count + 7);
+
+    // skip vendor comments
+    read(buffer, 4);
+    tag_size = BE8x4(buffer);
+    seek(position() + tag_size);
+
+    // get number of other comments
+    read(buffer, 4);
+    tag_count = BE8x4(buffer);
+
+    // search through comments
+    for (int i = 0; i < tag_count; i++) {
+      // read tag size
+      read(buffer, 4);
+      tag_size = BE8x4(buffer);
+
+      // read tag data
+      readTag(tag_size);
+    }
+  }
+
+  // rewind for now
+  seek(0);
+}
+
+
 // read important tags, return minimal header
 int MediaFile::readHeader(uint8_t *&buf) {
   char header[48];
@@ -226,6 +273,12 @@ int MediaFile::readHeader(uint8_t *&buf) {
   else if (!strncmp_P(header, PSTR("ID3"), 3)) {
     // MP3 with ID3v2.x tags
     readMp3Header(header[3]);
+  }
+  else if (!strncmp_P(header, PSTR("OggS"), 4)) {
+    // Ogg with Vorbis comments
+    readOggHeader();
+  } else {
+    seek(0);
   }
 
   // use file name if no title found

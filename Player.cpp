@@ -420,7 +420,7 @@ void Player::updateText() {
   String text;
 
   if (state == Playing) {
-    text = currentTrack.getTag(abs(display.tag));
+    text = currentTrack.getTag(abs(display.tag) - 1);
   }
 
   ATOMIC_BLOCK(ATOMIC_FORCEON) {

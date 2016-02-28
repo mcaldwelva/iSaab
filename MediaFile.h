@@ -33,6 +33,7 @@ class MediaFile : public File
     void readTag(uint32_t size);
     void readFlacHeader();
     void readMp3Header(uint8_t ver);
+    void readOggHeader();
 };
 
 #endif // MEDIAFILE_H
