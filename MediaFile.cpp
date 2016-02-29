@@ -71,7 +71,7 @@ void MediaFile::readTag(char tag[], uint32_t size) {
     asciiStringCopy(tags[Band], buffer, 24, size);
   }
   else if (!strncmp_P(tag, PSTR("TCON"), 4) || !strncmp_P(tag, PSTR("TCO"), 3)) {
-    asciiStringCopy(tags[Genre], buffer, 4, size);
+    asciiStringCopy(tags[Genre], buffer, 24, size);
   }
   else if (!strncmp_P(tag, PSTR("TYER"), 4) || !strncmp_P(tag, PSTR("TYE"), 3)) {
     asciiStringCopy(tags[Year], buffer, 4, size);
@@ -113,7 +113,7 @@ void MediaFile::readTag(uint32_t size) {
     asciiStringCopy(tags[Genre], (buffer + 6), 24, size - 6);
   }
   else if (!strncasecmp_P(buffer, PSTR("DATE="), 5)) {
-    asciiStringCopy(tags[Year], (buffer + 5), 24, size - 5);
+    asciiStringCopy(tags[Year], (buffer + 5), 4, size - 5);
   }
 //  else if (!strncasecmp_P(buffer, PSTR("REPLAYGAIN_TRACK_GAIN="), 22)) {
 //  }
