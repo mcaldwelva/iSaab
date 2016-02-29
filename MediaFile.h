@@ -13,7 +13,7 @@
 class MediaFile : public File
 {
   public:
-    enum Tag : uint8_t { Title, Album, Artist, Year };
+    enum Tag : uint8_t { Title, Album, Band, Artist, Genre, Year };
 
     MediaFile();
     void operator=(const File &file);
@@ -26,7 +26,7 @@ class MediaFile : public File
   private:
     bool flac;
     uint8_t *buffer;
-    String tags[4];
+    String tags[Year + 1];
 
     void asciiStringCopy(String &dst, char src[], uint8_t dsize, uint8_t ssize);
     void readTag(char tag[], uint32_t size);

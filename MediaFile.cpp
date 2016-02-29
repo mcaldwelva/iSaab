@@ -67,6 +67,12 @@ void MediaFile::readTag(char tag[], uint32_t size) {
   else if (!strncmp_P(tag, PSTR("TPE1"), 4) || !strncmp_P(tag, PSTR("TP1"), 3)) {
     asciiStringCopy(tags[Artist], buffer, 24, size);
   }
+  else if (!strncmp_P(tag, PSTR("TPE2"), 4) || !strncmp_P(tag, PSTR("TP2"), 3)) {
+    asciiStringCopy(tags[Band], buffer, 24, size);
+  }
+  else if (!strncmp_P(tag, PSTR("TCON"), 4) || !strncmp_P(tag, PSTR("TCO"), 3)) {
+    asciiStringCopy(tags[Genre], buffer, 4, size);
+  }
   else if (!strncmp_P(tag, PSTR("TYER"), 4) || !strncmp_P(tag, PSTR("TYE"), 3)) {
     asciiStringCopy(tags[Year], buffer, 4, size);
   }
@@ -99,6 +105,12 @@ void MediaFile::readTag(uint32_t size) {
   }
   else if (!strncasecmp_P(buffer, PSTR("ARTIST="), 7)) {
     asciiStringCopy(tags[Artist], (buffer + 7), 24, size - 7);
+  }
+  else if (!strncasecmp_P(buffer, PSTR("ALBUMARTIST="), 12)) {
+    asciiStringCopy(tags[Band], (buffer + 12), 24, size - 12);
+  }
+  else if (!strncasecmp_P(buffer, PSTR("GENRE="), 6)) {
+    asciiStringCopy(tags[Genre], (buffer + 6), 24, size - 6);
   }
   else if (!strncasecmp_P(buffer, PSTR("DATE="), 5)) {
     asciiStringCopy(tags[Year], (buffer + 5), 24, size - 5);
@@ -327,7 +339,7 @@ void MediaFile::close() {
   flac = false;
   buffer = NULL;
 
-  for (uint8_t i = 0; i < 4; i++) {
+  for (uint8_t i = 0; i <= Year; i++) {
     tags[i] = "";
   }
 

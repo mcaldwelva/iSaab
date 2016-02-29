@@ -198,9 +198,9 @@ void displayRequest(CAN::msg &msg) {
             msg.data[6] = text[i++];
             msg.data[7] = text[i++];
           } else {
-            msg.data[5] = 0x20;
-            msg.data[6] = 0x20;
-            msg.data[7] = 0x20;
+            msg.data[5] = 0x00;
+            msg.data[6] = 0x00;
+            msg.data[7] = 0x00;
           }
           while (ibus.send(msg) == 0xff);
         }

@@ -234,7 +234,7 @@ void Player::nextDisc() {
 #endif
 
   if (shuffled) {
-    display.tag = (abs(display.tag) + 1) % (NUM_PRESETS - 1);
+    display.tag = (abs(display.tag) + 1) % (NUM_PRESETS + 1);
     updateText();
   } else {
     trackNext = path[depth].max;
@@ -429,7 +429,7 @@ void Player::updateText() {
     }
     if (text[j] == 0x20) j++;
     for (; i < 23; i++, j++) {
-      display.text[i] = text[j] ? text[j] : 0x20;
+      display.text[i] = text[j];
     }
     display.tag = -abs(display.tag);
   }
