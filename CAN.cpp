@@ -92,6 +92,9 @@ void CAN::begin(uint16_t speed)
   // light up the corresponding LED when a buffer is occupied
   mcp2515_write_register(BFPCTRL, _BV(B1BFE) | _BV(B1BFM) | _BV(B0BFE) | _BV(B0BFM));
 
+  // One Shot Mode
+  mcp2515_write_register(CANCTRL, _BV(OSM));
+
   //Pasar el MCP2515 a modo normal
   setMode(NORMAL_MODE);
 }

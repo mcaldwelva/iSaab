@@ -76,7 +76,7 @@ void MediaFile::readTag(char tag[], uint32_t size) {
   else if (!strncmp_P(tag, PSTR("TYER"), 4) || !strncmp_P(tag, PSTR("TYE"), 3)) {
     asciiStringCopy(tags[Year], buffer, 4, size);
   }
-//  else if (!strncmp_P(tag, PSTR("XRVA"), 4) || !strncmp_P(tag, PSTR("RVA2"), 3)) {
+//  else if (!strncmp_P(tag, PSTR("XRVA"), 4) || !strncmp_P(tag, PSTR("RVA2"), 4)) {
 //  }
 }
 
@@ -123,7 +123,7 @@ void MediaFile::readTag(uint32_t size) {
 void MediaFile::readMp3Header(uint8_t ver) {
   char tag[4];
   uint32_t header_end;
-  uint32_t tag_size = 1;
+  uint32_t tag_size;
 
   // skip minor version & extended header info
   read(buffer, 2);
@@ -133,7 +133,7 @@ void MediaFile::readMp3Header(uint8_t ver) {
   header_end = position() + LE7x4(buffer);
 
   // scan tags
-  while (tag_size > 0 && position() < header_end) {
+  do {
     if (ver >= 3) {
       // v2.3 or greater
       read(tag, 4);
@@ -158,7 +158,7 @@ void MediaFile::readMp3Header(uint8_t ver) {
     }
 
     readTag(tag, tag_size);
-  }
+  } while (tag_size > 0);
 
   // skip to the end
   seek(header_end);
@@ -228,19 +228,27 @@ void MediaFile::readOggHeader() {
   uint32_t tag_count;
   uint32_t tag_size;
 
+  // skip header info
   seek(position() + 22);
-  seg_count = read();
-  read(buffer, seg_count);
 
+  // size of segment table
+  seg_count = read();
+
+  // read segment table
   seg_size = 0;
+  read(buffer, seg_count);
   for (int i = 0; i < seg_count; i++) {
     seg_size += (uint8_t) buffer[i];
   }
   seek(position() + seg_size);
 
+  // verify beginning of page
   read(buffer, 4);
   if (!strncmp_P((char *)buffer, PSTR("OggS"), 4)) {
+    // skip header info
     seek(position() + 22);
+
+    // skip segment table
     seg_count = read();
     seek(position() + seg_count + 7);
 
@@ -264,7 +272,7 @@ void MediaFile::readOggHeader() {
     }
   }
 
-  // rewind for now
+  // rewind
   seek(0);
 }
 
