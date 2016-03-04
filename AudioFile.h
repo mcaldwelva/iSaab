@@ -1,21 +1,23 @@
 /*
- * tags -- A minimal tag parser for FLAC and MP3
+ * AudioFile - extends the SDLib::File class to provide some nice-to-have
+ *             features when working with the VS1053b sound coprocessor
  *
- * 07/04/2015 Mike C. - v 0.1
+ * 02/01/2016 Mike C. - v 1.0x
  */
 
-#ifndef MEDIAFILE_H
-#define MEDIAFILE_H
+#ifndef AUDIOFILE_H
+#define AUDIOFILE_H
 #include <SD.h>
 
 #define TAG_BUFFER 64
+#define MAX_TAG_LENGTH 24
 
-class MediaFile : public File
+class AudioFile : public File
 {
   public:
     enum Tag : uint8_t { Title, Album, Band, Artist, Genre, Year };
 
-    MediaFile();
+    AudioFile();
     void operator=(const File &file);
     int readHeader(uint8_t *&buf);
     int readBlock(uint8_t *&buf);
@@ -31,10 +33,10 @@ class MediaFile : public File
     void asciiStringCopy(String &dst, char src[], uint8_t dsize, uint8_t ssize);
     void readTag(char tag[], uint32_t size);
     void readTag(uint32_t size);
+    void readId3Header(uint8_t ver);
     void readFlacHeader();
-    void readMp3Header(uint8_t ver);
     void readOggHeader();
 };
 
-#endif // MEDIAFILE_H
+#endif // AUDIOFILE_H
 

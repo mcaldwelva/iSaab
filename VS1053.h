@@ -8,7 +8,7 @@
 #ifndef VS1053_H
 #define VS1053_H
 
-#include "MediaFile.h"
+#include "AudioFile.h"
 
 #define VS1053_BUFFER_SIZE   32
 
@@ -90,7 +90,7 @@ class VS1053 {
 
     enum State : uint8_t { Off = 0x00, Standby = 0x30, Playing = 0x40, Paused = 0x50, Rapid = 0x60 };
     volatile State state;
-    MediaFile currentTrack;
+    AudioFile currentTrack;
 
   private:
     bool readyForData();

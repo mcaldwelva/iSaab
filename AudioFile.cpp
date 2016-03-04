@@ -1,10 +1,11 @@
 /*
- * tags -- A minimal tag parser for FLAC and MP3
+ * AudioFile - extends the SDLib::File class to provide some nice-to-have
+ *             features when working with the VS1053b sound coprocessor
  *
- * 07/04/2015 Mike C. - v 0.1
+ * 02/01/2016 Mike C. - v 1.0x
  */
 
-#include "MediaFile.h"
+#include "AudioFile.h"
 
 // various macros to interpret multi-byte integers
 #define LE7x4(x) (((uint32_t)((uint8_t)x[0])) << 21 | ((uint32_t)((uint8_t)x[1])) << 14 | ((uint32_t)((uint8_t)x[2])) << 7 | ((uint32_t)((uint8_t)x[3])))
@@ -13,17 +14,17 @@
 #define BE8x4(x) (((uint32_t)((uint8_t)x[3])) << 24 | ((uint32_t)((uint8_t)x[2])) << 16 | ((uint32_t)((uint8_t)x[1])) << 8 | ((uint32_t)((uint8_t)x[0])))
 
 
-MediaFile::MediaFile() {
+AudioFile::AudioFile() {
   flac = false;
   buffer = NULL;
 }
 
 
-void MediaFile::operator=(const File &file) {
+void AudioFile::operator=(const File &file) {
   File::operator=(file);
 }
 
-String MediaFile::getTag(uint8_t tag) {
+String AudioFile::getTag(uint8_t tag) {
   if (tag <= Year) {
     return tags[tag];
   } else {
@@ -33,7 +34,7 @@ String MediaFile::getTag(uint8_t tag) {
 }
 
 // copy ascii/wide/unicode string to ascii
-void MediaFile::asciiStringCopy(String &dst, char src[], uint8_t dsize, uint8_t ssize) {
+void AudioFile::asciiStringCopy(String &dst, char src[], uint8_t dsize, uint8_t ssize) {
   for (uint8_t i = 0, j = 0; i < ssize && j < dsize; i++) {
     if (32 <= src[i] && src[i] <= 126) {
       dst += src[i];
@@ -44,7 +45,7 @@ void MediaFile::asciiStringCopy(String &dst, char src[], uint8_t dsize, uint8_t 
 
 // read an ID3 tag and store it if it's one we care about
 inline __attribute__((always_inline))
-void MediaFile::readTag(char tag[], uint32_t size) {
+void AudioFile::readTag(char tag[], uint32_t size) {
   char buffer[TAG_BUFFER];
   int32_t skip;
 
@@ -59,19 +60,19 @@ void MediaFile::readTag(char tag[], uint32_t size) {
   }
 
   if (!strncmp_P(tag, PSTR("TIT2"), 4) || !strncmp_P(tag, PSTR("TT2"), 3)) {
-    asciiStringCopy(tags[Title], buffer, 24, size);
+    asciiStringCopy(tags[Title], buffer, MAX_TAG_LENGTH, size);
   }
   else if (!strncmp_P(tag, PSTR("TALB"), 4) || !strncmp_P(tag, PSTR("TAL"), 3)) {
-    asciiStringCopy(tags[Album], buffer, 24, size);
+    asciiStringCopy(tags[Album], buffer, MAX_TAG_LENGTH, size);
   }
   else if (!strncmp_P(tag, PSTR("TPE1"), 4) || !strncmp_P(tag, PSTR("TP1"), 3)) {
-    asciiStringCopy(tags[Artist], buffer, 24, size);
+    asciiStringCopy(tags[Artist], buffer, MAX_TAG_LENGTH, size);
   }
   else if (!strncmp_P(tag, PSTR("TPE2"), 4) || !strncmp_P(tag, PSTR("TP2"), 3)) {
-    asciiStringCopy(tags[Band], buffer, 24, size);
+    asciiStringCopy(tags[Band], buffer, MAX_TAG_LENGTH, size);
   }
   else if (!strncmp_P(tag, PSTR("TCON"), 4) || !strncmp_P(tag, PSTR("TCO"), 3)) {
-    asciiStringCopy(tags[Genre], buffer, 24, size);
+    asciiStringCopy(tags[Genre], buffer, MAX_TAG_LENGTH, size);
   }
   else if (!strncmp_P(tag, PSTR("TYER"), 4) || !strncmp_P(tag, PSTR("TYE"), 3)) {
     asciiStringCopy(tags[Year], buffer, 4, size);
@@ -83,7 +84,7 @@ void MediaFile::readTag(char tag[], uint32_t size) {
 
 // read a Vorbis comment and store it if it's one we care about
 inline __attribute__((always_inline))
-void MediaFile::readTag(uint32_t size) {
+void AudioFile::readTag(uint32_t size) {
   char buffer[TAG_BUFFER];
   int32_t skip;
 
@@ -98,19 +99,19 @@ void MediaFile::readTag(uint32_t size) {
   }
 
   if (!strncasecmp_P(buffer, PSTR("TITLE="), 6)) {
-    asciiStringCopy(tags[Title], (buffer + 6), 24, size - 6);
+    asciiStringCopy(tags[Title], (buffer + 6), MAX_TAG_LENGTH, size - 6);
   }
   else if (!strncasecmp_P(buffer, PSTR("ALBUM="), 6)) {
-    asciiStringCopy(tags[Album], (buffer + 6), 24, size - 6);
+    asciiStringCopy(tags[Album], (buffer + 6), MAX_TAG_LENGTH, size - 6);
   }
   else if (!strncasecmp_P(buffer, PSTR("ARTIST="), 7)) {
-    asciiStringCopy(tags[Artist], (buffer + 7), 24, size - 7);
+    asciiStringCopy(tags[Artist], (buffer + 7), MAX_TAG_LENGTH, size - 7);
   }
   else if (!strncasecmp_P(buffer, PSTR("ALBUMARTIST="), 12)) {
-    asciiStringCopy(tags[Band], (buffer + 12), 24, size - 12);
+    asciiStringCopy(tags[Band], (buffer + 12), MAX_TAG_LENGTH, size - 12);
   }
   else if (!strncasecmp_P(buffer, PSTR("GENRE="), 6)) {
-    asciiStringCopy(tags[Genre], (buffer + 6), 24, size - 6);
+    asciiStringCopy(tags[Genre], (buffer + 6), MAX_TAG_LENGTH, size - 6);
   }
   else if (!strncasecmp_P(buffer, PSTR("DATE="), 5)) {
     asciiStringCopy(tags[Year], (buffer + 5), 4, size - 5);
@@ -120,7 +121,7 @@ void MediaFile::readTag(uint32_t size) {
 }
 
 
-void MediaFile::readMp3Header(uint8_t ver) {
+void AudioFile::readId3Header(uint8_t ver) {
   char tag[4];
   uint32_t header_end;
   uint32_t tag_size;
@@ -158,14 +159,14 @@ void MediaFile::readMp3Header(uint8_t ver) {
     }
 
     readTag(tag, tag_size);
-  } while (tag_size > 0);
+  } while (tag_size > 0 && position() < header_end);
 
   // skip to the end
   seek(header_end);
 }
 
 
-void MediaFile::readFlacHeader() {
+void AudioFile::readFlacHeader() {
   uint8_t block_type;
   bool last_block;
   uint32_t block_size;
@@ -222,7 +223,7 @@ void MediaFile::readFlacHeader() {
 }
 
 
-void MediaFile::readOggHeader() {
+void AudioFile::readOggHeader() {
   uint8_t seg_count;
   uint16_t seg_size;
   uint32_t tag_count;
@@ -278,7 +279,7 @@ void MediaFile::readOggHeader() {
 
 
 // read important tags, return minimal header
-int MediaFile::readHeader(uint8_t *&buf) {
+int AudioFile::readHeader(uint8_t *&buf) {
   char header[48];
   buffer = (uint8_t *)&header;
   seek(0);
@@ -291,8 +292,8 @@ int MediaFile::readHeader(uint8_t *&buf) {
     flac = true;
   }
   else if (!strncmp_P(header, PSTR("ID3"), 3)) {
-    // MP3 with ID3v2.x tags
-    readMp3Header(header[3]);
+    // MP3/AAC with ID3v2.x tags
+    readId3Header(header[3]);
   }
   else if (!strncmp_P(header, PSTR("OggS"), 4)) {
     // Ogg with Vorbis comments
@@ -317,14 +318,14 @@ int MediaFile::readHeader(uint8_t *&buf) {
 }
 
 
-bool MediaFile::isFlac() {
+bool AudioFile::isFlac() {
   return flac;
 }
 
 
 // makes a block-aligned read from the current position
 // returns a pointer to the buffer and the number of bytes read
-int MediaFile::readBlock(uint8_t *&buf) {
+int AudioFile::readBlock(uint8_t *&buf) {
   uint32_t pos = position();
   uint16_t rem = pos % 512;
   uint16_t siz = flac ? 512 - rem : 32 - (rem % 32);
@@ -343,7 +344,7 @@ int MediaFile::readBlock(uint8_t *&buf) {
 
 
 // reset properties on closing
-void MediaFile::close() {
+void AudioFile::close() {
   flac = false;
   buffer = NULL;
 
