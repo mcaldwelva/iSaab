@@ -11,7 +11,7 @@
 
 // guarantees progress through the entire library
 // and next track selected in < 2 seconds
-#define RANDOM_TRACK (trackNum + 1 + random(512))
+#define RANDOM_TRACK (trackNum + 1 + random(509))
 
 Player::Player() {
   // initial player state
@@ -407,10 +407,11 @@ void Player::getStatus(uint8_t data[]) {
 
 
 // get text for display
-char *Player::getText(int8_t &haveText) {
-  haveText = display.text[0] ? display.tag : 0;
+int Player::getText(char *&buf) {
+  int ret = display.text[0] ? display.tag : 0;
   display.tag = abs(display.tag);
-  return display.text;
+  buf = display.text;
+  return ret;
 }
 
 

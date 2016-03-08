@@ -24,14 +24,16 @@ void AudioFile::operator=(const File &file) {
   File::operator=(file);
 }
 
+
 String AudioFile::getTag(uint8_t tag) {
-  if (tag <= Year) {
+  if (tag < MAX_TAG_ID) {
     return tags[tag];
   } else {
     String empty;
     return empty;
   }
 }
+
 
 // copy ascii/wide/unicode string to ascii
 void AudioFile::asciiStringCopy(String &dst, char src[], uint8_t dsize, uint8_t ssize) {
@@ -43,87 +45,10 @@ void AudioFile::asciiStringCopy(String &dst, char src[], uint8_t dsize, uint8_t 
 }
 
 
-// read an ID3 tag and store it if it's one we care about
-inline __attribute__((always_inline))
-void AudioFile::readTag(char tag[], uint32_t size) {
-  char buffer[TAG_BUFFER];
-  int32_t skip;
-
-  // read the tag data
-  skip = size - TAG_BUFFER;
-  if (skip < 0) {
-    read(buffer, size);
-  } else {
-    size = TAG_BUFFER;
-    read(buffer, size);
-    seek(position() + skip);
-  }
-
-  if (!strncmp_P(tag, PSTR("TIT2"), 4) || !strncmp_P(tag, PSTR("TT2"), 3)) {
-    asciiStringCopy(tags[Title], buffer, MAX_TAG_LENGTH, size);
-  }
-  else if (!strncmp_P(tag, PSTR("TALB"), 4) || !strncmp_P(tag, PSTR("TAL"), 3)) {
-    asciiStringCopy(tags[Album], buffer, MAX_TAG_LENGTH, size);
-  }
-  else if (!strncmp_P(tag, PSTR("TPE1"), 4) || !strncmp_P(tag, PSTR("TP1"), 3)) {
-    asciiStringCopy(tags[Artist], buffer, MAX_TAG_LENGTH, size);
-  }
-  else if (!strncmp_P(tag, PSTR("TPE2"), 4) || !strncmp_P(tag, PSTR("TP2"), 3)) {
-    asciiStringCopy(tags[Band], buffer, MAX_TAG_LENGTH, size);
-  }
-  else if (!strncmp_P(tag, PSTR("TCON"), 4) || !strncmp_P(tag, PSTR("TCO"), 3)) {
-    asciiStringCopy(tags[Genre], buffer, MAX_TAG_LENGTH, size);
-  }
-  else if (!strncmp_P(tag, PSTR("TYER"), 4) || !strncmp_P(tag, PSTR("TYE"), 3)) {
-    asciiStringCopy(tags[Year], buffer, 4, size);
-  }
-//  else if (!strncmp_P(tag, PSTR("XRVA"), 4) || !strncmp_P(tag, PSTR("RVA2"), 4)) {
-//  }
-}
-
-
-// read a Vorbis comment and store it if it's one we care about
-inline __attribute__((always_inline))
-void AudioFile::readTag(uint32_t size) {
-  char buffer[TAG_BUFFER];
-  int32_t skip;
-
-  // read the tag data
-  skip = size - TAG_BUFFER;
-  if (skip < 0) {
-    read(buffer, size);
-  } else {
-    size = TAG_BUFFER;
-    read(buffer, size);
-    seek(position() + skip);
-  }
-
-  if (!strncasecmp_P(buffer, PSTR("TITLE="), 6)) {
-    asciiStringCopy(tags[Title], (buffer + 6), MAX_TAG_LENGTH, size - 6);
-  }
-  else if (!strncasecmp_P(buffer, PSTR("ALBUM="), 6)) {
-    asciiStringCopy(tags[Album], (buffer + 6), MAX_TAG_LENGTH, size - 6);
-  }
-  else if (!strncasecmp_P(buffer, PSTR("ARTIST="), 7)) {
-    asciiStringCopy(tags[Artist], (buffer + 7), MAX_TAG_LENGTH, size - 7);
-  }
-  else if (!strncasecmp_P(buffer, PSTR("ALBUMARTIST="), 12)) {
-    asciiStringCopy(tags[Band], (buffer + 12), MAX_TAG_LENGTH, size - 12);
-  }
-  else if (!strncasecmp_P(buffer, PSTR("GENRE="), 6)) {
-    asciiStringCopy(tags[Genre], (buffer + 6), MAX_TAG_LENGTH, size - 6);
-  }
-  else if (!strncasecmp_P(buffer, PSTR("DATE="), 5)) {
-    asciiStringCopy(tags[Year], (buffer + 5), 4, size - 5);
-  }
-//  else if (!strncasecmp_P(buffer, PSTR("REPLAYGAIN_TRACK_GAIN="), 22)) {
-//  }
-}
-
-
 void AudioFile::readId3Header(uint8_t ver) {
-  char tag[4];
+  char buffer[TAG_BUFFER];
   uint32_t header_end;
+  char tag[4];
   uint32_t tag_size;
 
   // skip minor version & extended header info
@@ -133,32 +58,45 @@ void AudioFile::readId3Header(uint8_t ver) {
   read(buffer, 4);
   header_end = position() + LE7x4(buffer);
 
-  // scan tags
+  // search through tags
   do {
     if (ver >= 3) {
-      // v2.3 or greater
+      // get id
       read(tag, 4);
 
-      // read tag size based on version
+      // get size
       read(buffer, 4);
-      if (ver > 3) {
-        tag_size = LE7x4(buffer);
-      } else {
-        tag_size = LE8x4(buffer);
-      }
+      tag_size = (ver > 3) ? LE7x4(buffer) : LE8x4(buffer);
 
       // skip flags
       read(buffer, 2);
     } else {
-      // v2.0 - v2.2
+      // get id
       read(tag, 3);
 
-      // read tag size
+      // get size
       read(buffer, 3);
       tag_size = LE8x3(buffer);
     }
 
-    readTag(tag, tag_size);
+    // read the tag field
+    int32_t skip = tag_size - TAG_BUFFER;
+    if (skip < 0) {
+      read(buffer, tag_size);
+    } else {
+      tag_size = TAG_BUFFER;
+      read(buffer, tag_size);
+      seek(position() + skip);
+    }
+
+    // store it if it's one we care about
+    for (uint8_t i = 0; i < MAX_TAG_ID; i++) {
+      if ((ver >= 3 && !strncasecmp_P(tag, &(Id3v23Fields[i * ID3V23_ID]), ID3V23_ID))
+          || !strncasecmp_P(tag, &(Id3v20Fields[i * ID3V20_ID]), ID3V20_ID)) {
+        asciiStringCopy(tags[i], buffer, MAX_TAG_LENGTH, tag_size);
+        break;
+      }
+    }
   } while (tag_size > 0 && position() < header_end);
 
   // skip to the end
@@ -166,16 +104,56 @@ void AudioFile::readId3Header(uint8_t ver) {
 }
 
 
+void AudioFile::readVorbisComments() {
+  char buffer[TAG_BUFFER];
+  uint32_t tag_count;
+  uint32_t tag_size;
+
+  // skip vendor comments
+  read(buffer, 4);
+  tag_size = BE8x4(buffer);
+  seek(position() + tag_size);
+
+  // get number of other comments
+  read(buffer, 4);
+  tag_count = BE8x4(buffer);
+
+  // search through comments
+  for (int i = 0; i < tag_count; i++) {
+    // read field size
+    read(buffer, 4);
+    tag_size = BE8x4(buffer);
+
+    // read the tag field
+    int32_t skip = tag_size - TAG_BUFFER;
+    if (skip < 0) {
+      read(buffer, tag_size);
+    } else {
+      tag_size = TAG_BUFFER;
+      read(buffer, tag_size);
+      seek(position() + skip);
+    }
+
+    // store it if it's one we care about
+    uint8_t delim = strchr(buffer, '=') - buffer + 1;
+    for (uint8_t i = 0; i < MAX_TAG_ID; i++) {
+      if (!strncasecmp_P(buffer, &(VorbisFields[i * VORBIS_ID]), delim)) {
+        asciiStringCopy(tags[i], (buffer + delim), MAX_TAG_LENGTH, tag_size - delim);
+        break;
+      }
+    }
+  }
+}
+
+
 void AudioFile::readFlacHeader() {
   uint8_t block_type;
   bool last_block;
   uint32_t block_size;
-  uint32_t tag_count;
-  uint32_t tag_size;
 
   // keep "fLaC"
   buffer+= 4;
-  
+
   // read metablocks
   do {
     // block header
@@ -195,24 +173,8 @@ void AudioFile::readFlacHeader() {
         break;
 
       case 4: // vorbis_comment
-        // skip vendor comments
-        read(buffer, 4);
-        tag_size = BE8x4(buffer);
-        seek(position() + tag_size);
-
-        // get number of other comments
-        read(buffer, 4);
-        tag_count = BE8x4(buffer);
-
-        // search through comments
-        for (int i = 0; i < tag_count; i++) {
-          // read tag size
-          read(buffer, 4);
-          tag_size = BE8x4(buffer);
-
-          // read tag data
-          readTag(tag_size);
-        }
+        // process comment block
+        readVorbisComments();
         break;
 
       default:
@@ -226,8 +188,6 @@ void AudioFile::readFlacHeader() {
 void AudioFile::readOggHeader() {
   uint8_t seg_count;
   uint16_t seg_size;
-  uint32_t tag_count;
-  uint32_t tag_size;
 
   // skip header info
   seek(position() + 22);
@@ -253,28 +213,12 @@ void AudioFile::readOggHeader() {
     seg_count = read();
     seek(position() + seg_count + 7);
 
-    // skip vendor comments
-    read(buffer, 4);
-    tag_size = BE8x4(buffer);
-    seek(position() + tag_size);
-
-    // get number of other comments
-    read(buffer, 4);
-    tag_count = BE8x4(buffer);
-
-    // search through comments
-    for (int i = 0; i < tag_count; i++) {
-      // read tag size
-      read(buffer, 4);
-      tag_size = BE8x4(buffer);
-
-      // read tag data
-      readTag(tag_size);
-    }
+    // process comment block
+    readVorbisComments();
   }
 
   // rewind
-  seek(0);
+//  seek(0);
 }
 
 
@@ -348,7 +292,7 @@ void AudioFile::close() {
   flac = false;
   buffer = NULL;
 
-  for (uint8_t i = 0; i <= Year; i++) {
+  for (uint8_t i = 0; i < MAX_TAG_ID; i++) {
     tags[i] = "";
   }
 

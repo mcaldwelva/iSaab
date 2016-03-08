@@ -15,7 +15,7 @@
 class AudioFile : public File
 {
   public:
-    enum Tag : uint8_t { Title, Album, Band, Artist, Genre, Year };
+    enum Tag : uint8_t { Title, Album, Band, Artist, Genre, Year, MAX_TAG_ID };
 
     AudioFile();
     void operator=(const File &file);
@@ -28,15 +28,41 @@ class AudioFile : public File
   private:
     bool flac;
     uint8_t *buffer;
-    String tags[Year + 1];
+    String tags[MAX_TAG_ID];
 
     void asciiStringCopy(String &dst, char src[], uint8_t dsize, uint8_t ssize);
-    void readTag(char tag[], uint32_t size);
-    void readTag(uint32_t size);
     void readId3Header(uint8_t ver);
+    void readVorbisComments();
     void readFlacHeader();
     void readOggHeader();
 };
+
+#define VORBIS_ID 12
+const char VorbisFields[] PROGMEM = 
+  "TITLE=      "
+  "ALBUM=      "
+  "ALBUMARTIST="
+  "ARTIST=     "
+  "GENRE=      "
+  "DATE=       ";
+
+#define ID3V23_ID 4
+const char Id3v23Fields[] PROGMEM = 
+  "TIT2"
+  "TALB"
+  "TPE1"
+  "TPE2"
+  "TCON"
+  "TYER";
+
+#define ID3V20_ID 3
+const char Id3v20Fields[] PROGMEM = 
+  "TT2"
+  "TAL"
+  "TP1"
+  "TP2"
+  "TCO"
+  "TYE";
 
 #endif // AUDIOFILE_H
 
