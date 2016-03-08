@@ -13,6 +13,9 @@
  *
  *  10/09/2015 Mike C. - Adjusted speed settings:
  *  http://www.microchip.com/forums/m/tm.aspx?m=236967&p=2
+ *
+ *  03/04/2016 Mike C. - Modified send function:
+ *   guarantees transmission order of up to 12 consecutive messages
  */
 
 #include <SPI.h>
@@ -92,9 +95,6 @@ void CAN::begin(uint16_t speed)
   // light up the corresponding LED when a buffer is occupied
   mcp2515_write_register(BFPCTRL, _BV(B1BFE) | _BV(B1BFM) | _BV(B0BFE) | _BV(B0BFM));
 
-  // One Shot Mode
-  mcp2515_write_register(CANCTRL, _BV(OSM));
-
   //Pasar el MCP2515 a modo normal
   setMode(NORMAL_MODE);
 }
@@ -118,6 +118,9 @@ Example:
 uint8_t CAN::send(const msg &message)
 {
   uint8_t status = mcp2515_read_status(SPI_READ_STATUS);
+  static uint8_t priority;
+  uint8_t address;
+  uint8_t ctrlreg;
 
   /* Statusbyte:
    *
@@ -126,16 +129,25 @@ uint8_t CAN::send(const msg &message)
    *  4	TXB1CNTRL.TXREQ
    *  6	TXB2CNTRL.TXREQ
    */
-  uint8_t address;
 
   if (bit_is_clear(status, 2)) {
     address = 0x00;
+    ctrlreg = TXB0CTRL;
+
+    // if all buffers are clear, reset priority
+    if ((status & 0b01010100) == 0) {
+      priority = 3;
+    } else {
+      if (priority) priority--;
+    }
   }
   else if (bit_is_clear(status, 4)) {
     address = 0x02;
+    ctrlreg = TXB1CTRL;
   }
   else if (bit_is_clear(status, 6)) {
     address = 0x04;
+    ctrlreg = TXB2CTRL;
   }
   else {
     // all buffers used => could not send message
@@ -174,17 +186,12 @@ uint8_t CAN::send(const msg &message)
   }
 
   fastDigitalWrite(MCP2515_CS, HIGH);
-  delayMicroseconds(1);
-  fastDigitalWrite(MCP2515_CS, LOW);
-
-  // send message
-  address = (address == 0) ? 1 : address;
-  spiwrite(SPI_RTS | address);
-
-  fastDigitalWrite(MCP2515_CS, HIGH);
 #ifdef SPI_HAS_TRANSACTION
   SPI.endTransaction();
 #endif
+
+  // flag the appropriate buffer for transmission
+  mcp2515_bit_modify(ctrlreg, _BV(TXREQ) | _BV(TXP1) | _BV(TXP0), _BV(TXREQ) | priority);
 
   return address;
 }
