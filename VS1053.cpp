@@ -10,8 +10,8 @@
 #include <util/atomic.h>
 #include "VS1053.h"
 
-#define VS1053_SCI_SETTING SPISettings(3000000, MSBFIRST, SPI_MODE0)
-#define VS1053_SDI_SETTING SPISettings(12000000, MSBFIRST, SPI_MODE0)
+#define VS1053_SCI_SETTING SPISettings(1750000, MSBFIRST, SPI_MODE0)
+#define VS1053_SDI_SETTING SPISettings(13750000, MSBFIRST, SPI_MODE0)
 
 // setup pins
 void VS1053::setup() {
@@ -38,13 +38,13 @@ void VS1053::setup() {
 bool VS1053::begin() {
   // turn on sound card
   digitalWrite(VS1053_XRESET, HIGH);
-  delay(100);
+  delay(2);
 
   // turn down analog
   setVolume(0xfe, 0xfe);
 
-  // set internal speed, SC_MULT=3.5x, SC_ADD=1.0x
-  sciWrite(SCI_CLOCKF, 0x8800);
+  // set internal speed, SC_MULT=4.5x, SC_ADD=0.0x
+  sciWrite(SCI_CLOCKF, 0xc000);
   delay(2);
 
   // simple check to see if the card is responding

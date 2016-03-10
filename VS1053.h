@@ -16,7 +16,7 @@
 #define VS1053_XCS           7    // VS1053 SPI Control select pin (output)
 #define VS1053_XDCS          6    // VS1053 SPI Data select pin (output)
 #define VS1053_XDREQ         3    // VS1053 Data Request (input)
-#define VS1053_IRQ           digitalPinToInterrupt(VS1053_XDREQ)
+#define VS1053_INT           digitalPinToInterrupt(VS1053_XDREQ)
 
 #define VS_WRITE_COMMAND     0x02
 #define VS_READ_COMMAND      0x03
