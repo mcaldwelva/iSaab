@@ -234,7 +234,7 @@ void Player::nextDisc() {
 #endif
 
   if (shuffled) {
-    display.tag = (abs(display.tag) + 1) % (NUM_PRESETS + 1);
+    display.tag = (abs(display.tag) + 1) % (AudioFile::MAX_TAG_ID + 1);
     updateText();
   } else {
     trackNext = path[depth].max;

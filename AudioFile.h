@@ -21,7 +21,7 @@ class AudioFile : public File
     void operator=(const File &file);
     int readHeader(uint8_t *&buf);
     int readBlock(uint8_t *&buf);
-    bool isFlac();
+    inline bool isFlac() { return flac; };
     String getTag(uint8_t tag);
     void close();
 

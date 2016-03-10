@@ -2,8 +2,8 @@
 #define CAN_H
 
 #define MCP2515_CS     10
-#define MCP2515_INT    2
-#define MCP2515_IRQ    digitalPinToInterrupt(MCP2515_INT)
+#define MCP2515_IRQ    2
+#define MCP2515_INT    digitalPinToInterrupt(MCP2515_IRQ)
 
 
 //----------------------------------------------------------------------------

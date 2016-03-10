@@ -91,8 +91,8 @@ void AudioFile::readId3Header(uint8_t ver) {
 
     // store it if it's one we care about
     for (uint8_t i = 0; i < MAX_TAG_ID; i++) {
-      if ((ver >= 3 && !strncasecmp_P(tag, &(Id3v23Fields[i * ID3V23_ID]), ID3V23_ID))
-          || !strncasecmp_P(tag, &(Id3v20Fields[i * ID3V20_ID]), ID3V20_ID)) {
+      if ((ver >= 3 && !strncasecmp_P(tag, (Id3v23Fields + i * ID3V23_ID), ID3V23_ID))
+          || !strncasecmp_P(tag, (Id3v20Fields + i * ID3V20_ID), ID3V20_ID)) {
         asciiStringCopy(tags[i], buffer, MAX_TAG_LENGTH, tag_size);
         break;
       }
@@ -137,7 +137,7 @@ void AudioFile::readVorbisComments() {
     // store it if it's one we care about
     uint8_t delim = strchr(buffer, '=') - buffer + 1;
     for (uint8_t i = 0; i < MAX_TAG_ID; i++) {
-      if (!strncasecmp_P(buffer, &(VorbisFields[i * VORBIS_ID]), delim)) {
+      if (!strncasecmp_P(buffer, (VorbisFields + i * VORBIS_ID), delim)) {
         asciiStringCopy(tags[i], (buffer + delim), MAX_TAG_LENGTH, tag_size - delim);
         break;
       }
@@ -218,7 +218,7 @@ void AudioFile::readOggHeader() {
   }
 
   // rewind
-//  seek(0);
+  seek(0);
 }
 
 
@@ -259,11 +259,6 @@ int AudioFile::readHeader(uint8_t *&buf) {
   // return cache pointer
   buf = buffer;
   return siz;
-}
-
-
-bool AudioFile::isFlac() {
-  return flac;
 }
 
 

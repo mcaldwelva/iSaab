@@ -32,7 +32,7 @@ void CAN::begin(uint16_t speed)
   pinMode(MCP2515_CS, OUTPUT);
   digitalWrite(MCP2515_CS, HIGH);
 
-  pinMode(MCP2515_INT, INPUT);
+  pinMode(MCP2515_IRQ, INPUT);
 
   SPI.begin();
 
@@ -287,7 +287,7 @@ Example:
 */
 uint8_t CAN::available()
 {
-  return (!fastDigitalRead(MCP2515_INT));
+  return (!fastDigitalRead(MCP2515_IRQ));
 }
 // ----------------------------------------------------------------------------
 /*
