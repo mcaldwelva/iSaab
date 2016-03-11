@@ -34,6 +34,7 @@ class Player : private VS1053
     void shuffle();
     void rewind();
     void forward();
+    void normal();
     void nextTrack();
     void prevTrack();
     void nextDisc();

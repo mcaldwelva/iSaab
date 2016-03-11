@@ -292,8 +292,11 @@ void Player::rewind() {
 #if (DEBUGMODE==1)
   Serial.println(F("REWIND"));
 #endif
-  int8_t seconds;
+  rapidCount++;
+  state = Rapid;
+  updateText();
 
+  int8_t seconds;
   if (rapidCount >= 15) {
     seconds = -12;
   } else if (rapidCount >= 10) {
@@ -301,7 +304,6 @@ void Player::rewind() {
   } else {
     seconds = -3;
   }
-
   skip(seconds);
 }
 
@@ -310,8 +312,11 @@ void Player::forward() {
 #if (DEBUGMODE==1)
   Serial.println(F("FAST FORWARD"));
 #endif
-  int8_t seconds;
+  rapidCount++;
+  state = Rapid;
+  updateText();
 
+  int8_t seconds;
   if (rapidCount >= 15) {
     seconds = +10;
   } else if (rapidCount >= 10) {
@@ -319,8 +324,19 @@ void Player::forward() {
   } else {
     seconds = +1;
   }
-
   skip(seconds);
+}
+
+
+void Player::normal() {
+#if (DEBUGMODE==1)
+  Serial.println(F("NORMAL"));
+#endif
+  if (state == Rapid) {
+    state = Playing;
+    updateText();
+    rapidCount = 0;
+  }
 }
 
 
@@ -378,13 +394,7 @@ void Player::getStatus(uint8_t data[]) {
   data[4] |= track % 10;
 
   // play status
-  if ((data[1] == 0x45) || (data[1] == 0x46)) {
-    rapidCount++;
-    data[3] = Rapid;
-  } else {
-    rapidCount = 0;
-    data[3] = (state == Paused) ? Playing : state;
-  }
+  data[3] = (state == Paused) ? Playing : state;
 
   // disc
   data[3] |= disc % 6 + 1;
