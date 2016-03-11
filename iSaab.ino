@@ -101,25 +101,6 @@ void presenceRequest(CAN::msg &msg) {
   msg.data[0] = 0x32;
   msg.data[6] = 0x00;
   while (ibus.send(msg) == 0xff);
-
-  // send rest of sequence
-  switch (action) {
-    case 0x02: // active
-      msg.data[3] = 0x36;
-      break;
-    case 0x03: // power on
-      msg.data[3] = 0x22;
-      break;
-    case 0x08: // power off
-      msg.data[3] = 0x38;
-      break;
-  }
-  msg.data[4] = 0x00;
-  msg.data[5] = 0x00;
-  while (msg.data[0] < 0x62) {
-    msg.data[0] += 0x10;
-    while (ibus.send(msg) == 0xff);
-  }
 }
 
 
@@ -131,6 +112,7 @@ void controlRequest(CAN::msg &msg) {
   // map CDC commands to methods
   switch (msg.data[1]) {
     case 0x00: // no command
+      cdc.normal();
       break;
     case 0x35: // TRACK >>
       cdc.nextTrack();
@@ -175,55 +157,42 @@ inline __attribute__((always_inline))
 void displayRequest(CAN::msg &msg) {
   char *text;
   int8_t wanted = cdc.getText(text);
+  uint8_t row = msg.data[0];
 
-  if (msg.data[0] == 0x00) {
+  if (row != 0x00) {
     if (wanted) {
       // check display owner
-      switch (msg.data[1]) {
-        case 0x12: // iSaab
-          // send text
-          msg.id = TX_SID_TEXT;
-          msg.data[1] = 0x96;
+      if (msg.data[1] == 0x12) {
+        // send text
+        msg.id = TX_SID_TEXT;
+        msg.data[1] = 0x96;
 
-          for (int8_t id = 5, i = 0; id >= 0; id--) {
-            msg.data[0] = id;
-            if (id == 5) msg.data[0] |= 0x40;
+        for (int8_t id = 2, i = (row-1)*12; id >= 0; id--) {
+          msg.data[0] = id;
+          if (id == 2) msg.data[0] |= 0x40;
+          msg.data[2] = row | 0x80;
 
-            msg.data[2] = (id < 3) ? 2 : 1;
-            if (wanted < 0) msg.data[2] |= 0x80;
+          // copy text
+          msg.data[3] = text[i++];
+          msg.data[4] = text[i++];
+          msg.data[5] = text[i++];
+          msg.data[6] = text[i++];
+          msg.data[7] = text[i++];
+          while (ibus.send(msg) == 0xff);
+        }
 
-            // copy text
-            msg.data[3] = text[i++];
-            msg.data[4] = text[i++];
-            if (id % 3) {
-              msg.data[5] = text[i++];
-              msg.data[6] = text[i++];
-              msg.data[7] = text[i++];
-            } else {
-              msg.data[5] = 0x00;
-              msg.data[6] = 0x00;
-              msg.data[7] = 0x00;
-            }
-            while (ibus.send(msg) == 0xff);
-          }
-
-          msg.data[2] = 0x05;
-          break;
-        case 0xff: // available
-          msg.data[2] = 0x03;
-          break;
-        default: // taken
-          msg.data[2] = 0xff;
-          break;
+        msg.data[2] = 0x05; // keep
+      } else {
+        msg.data[2] = 0x03; // want
       }
     } else {
-      msg.data[2] = 0xff;
+      msg.data[2] = 0xff;   // done
     }
 
     // display request
     msg.id = TX_SID_REQUEST;
     msg.data[0] = 0x1f; // device
-    msg.data[1] = 0x00; // row
+    msg.data[1] = row;  // row
     msg.data[3] = 0x12; // priority
     msg.data[4] = 0x00;
     msg.data[5] = 0x00;
