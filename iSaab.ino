@@ -162,7 +162,7 @@ void displayRequest(CAN::msg &msg) {
     if (wanted) {
       // check display owner
       switch (msg.data[1]) {
-        case 0x12: // iSaab
+        case 0x08: // iSaab
           // send text
           msg.id = TX_SID_TEXT;
           msg.data[1] = 0x96;
@@ -171,8 +171,8 @@ void displayRequest(CAN::msg &msg) {
             msg.data[0] = id;
             if (id == 5) msg.data[0] |= 0x40;
 
-            msg.data[2] = (id < 3) ? 82 : 81;
-//            if (wanted < 0) msg.data[2] |= 0x80;
+            msg.data[2] = (id < 3) ? 2 : 1;
+            if (wanted < 0) msg.data[2] |= 0x80;
 
             // copy text
             msg.data[3] = text[i++];
@@ -206,7 +206,7 @@ void displayRequest(CAN::msg &msg) {
     msg.id = TX_SID_REQUEST;
     msg.data[0] = 0x1f; // device
     msg.data[1] = 0x00; // row
-    msg.data[3] = 0x12; // priority
+    msg.data[3] = 0x08; // priority
     msg.data[4] = 0x00;
     msg.data[5] = 0x00;
     msg.data[6] = 0x00;

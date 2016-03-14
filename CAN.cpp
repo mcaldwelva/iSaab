@@ -135,7 +135,7 @@ uint8_t CAN::send(const msg &message) {
   uint8_t address = (priority & 0x03) * 2;
 
   // if that buffer isn't available we're done
-  if (bit_is_set(status, _BV(address + 2))) {
+  if (bit_is_set(status, address + 2)) {
     return 0xff;
   }
 
