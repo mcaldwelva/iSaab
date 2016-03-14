@@ -115,29 +115,25 @@ Example:
 
 */
 uint8_t CAN::send(const msg &message) {
-  static uint8_t priority;
-
-  // if all buffers are clear
+  static uint8_t id;
   uint8_t status = mcp2515_read_status(SPI_READ_STATUS);
+
+  // reset id if all buffers are clear
   if ((status & 0b01010100) == 0) {
-    // reset priority
-    priority = 14;
-  } else {
-    // decrement priority
-    if (priority % 4 == 0) {
-      priority-=2;
-    } else {
-      priority--;
-    }
+    id = 14;
   }
 
-  // calculate TX buffer address
-  uint8_t address = (priority & 0x03) * 2;
+  // calculate TX buffer address & priority
+  uint8_t address = (id & 0x03) * 2;
+  uint8_t priority = id >> 2;
 
   // if that buffer isn't available we're done
   if (bit_is_set(status, address + 2)) {
     return 0xff;
   }
+
+  // decrement id, skipping invalid addresses
+  id -= (id % 4) ? 1 : 2;
 
 #ifdef SPI_HAS_TRANSACTION
   SPI.beginTransaction(MCP2515_SPI_SETTING);
@@ -190,7 +186,7 @@ uint8_t CAN::send(const msg &message) {
   }
 
   // flag the buffer for transmission
-  mcp2515_bit_modify(ctrlreg, _BV(TXREQ) | _BV(TXP1) | _BV(TXP0), _BV(TXREQ) | (priority >> 2));
+  mcp2515_bit_modify(ctrlreg, _BV(TXREQ) | _BV(TXP1) | _BV(TXP0), _BV(TXREQ) | priority);
 
   return priority;
 }
