@@ -27,8 +27,7 @@
 /******************************************************************************
  * PUBLIC METHODS
  ******************************************************************************/
-void CAN::begin(uint16_t speed)
-{
+void CAN::begin(uint16_t speed) {
   pinMode(MCP2515_CS, OUTPUT);
   digitalWrite(MCP2515_CS, HIGH);
 
@@ -115,43 +114,29 @@ Example:
 	while(CAN.send(CAN_TxMsg)==0xFF && count < 15);
 
 */
-uint8_t CAN::send(const msg &message)
-{
-  uint8_t status = mcp2515_read_status(SPI_READ_STATUS);
+uint8_t CAN::send(const msg &message) {
   static uint8_t priority;
-  uint8_t address;
-  uint8_t ctrlreg;
 
-  /* Statusbyte:
-   *
-   * Bit	Function
-   *  2	TXB0CNTRL.TXREQ
-   *  4	TXB1CNTRL.TXREQ
-   *  6	TXB2CNTRL.TXREQ
-   */
-
-  if (bit_is_clear(status, 2)) {
-    address = 0x00;
-    ctrlreg = TXB0CTRL;
-
-    // if all buffers are clear, reset priority
-    if ((status & 0b01010100) == 0) {
-      priority = 3;
+  // if all buffers are clear
+  uint8_t status = mcp2515_read_status(SPI_READ_STATUS);
+  if ((status & 0b01010100) == 0) {
+    // reset priority
+    priority = 14;
+  } else {
+    // decrement priority
+    if (priority % 4 == 0) {
+      priority-=2;
     } else {
-      if (priority) priority--;
+      priority--;
     }
   }
-  else if (bit_is_clear(status, 4)) {
-    address = 0x02;
-    ctrlreg = TXB1CTRL;
-  }
-  else if (bit_is_clear(status, 6)) {
-    address = 0x04;
-    ctrlreg = TXB2CTRL;
-  }
-  else {
-    // all buffers used => could not send message
-    return 0xFF;
+
+  // calculate TX buffer address
+  uint8_t address = (priority & 0x03) * 2;
+
+  // if that buffer isn't available we're done
+  if (bit_is_set(status, _BV(address + 2))) {
+    return 0xff;
   }
 
 #ifdef SPI_HAS_TRANSACTION
@@ -190,10 +175,24 @@ uint8_t CAN::send(const msg &message)
   SPI.endTransaction();
 #endif
 
-  // flag the appropriate buffer for transmission
-  mcp2515_bit_modify(ctrlreg, _BV(TXREQ) | _BV(TXP1) | _BV(TXP0), _BV(TXREQ) | priority);
+  // select the associated control register
+  uint8_t ctrlreg;
+  switch (address) {
+    case 4:
+      ctrlreg = TXB2CTRL;
+      break;
+    case 2:
+      ctrlreg = TXB1CTRL;
+      break;
+    case 0:
+      ctrlreg = TXB0CTRL;
+      break;
+  }
 
-  return address;
+  // flag the buffer for transmission
+  mcp2515_bit_modify(ctrlreg, _BV(TXREQ) | _BV(TXP1) | _BV(TXP0), _BV(TXREQ) | (priority >> 2));
+
+  return priority;
 }
 // ----------------------------------------------------------------------------
 /*
@@ -210,26 +209,20 @@ Example:
 	{
 	}
 */
-uint8_t CAN::receive(msg &message)
-{
-  // read status
-  uint8_t status = mcp2515_read_status(SPI_RX_STATUS);
-  uint8_t addr;
+uint8_t CAN::receive(msg &message) {
+  uint8_t address;
 
   // buffer 0 has the higher priority
-  if (bit_is_set(status, 6))
-  {
+  uint8_t status = mcp2515_read_status(SPI_RX_STATUS);
+  if (bit_is_set(status, 6)) {
     // message in buffer 0
-    addr = SPI_READ_RX;
-  }
-  else if (bit_is_set(status, 7))
-  {
+    address = 0x00;
+  } else if (bit_is_set(status, 7)) {
     // message in buffer 1
-    addr = SPI_READ_RX | 0x04;
-  }
-  else {
-    // Error: no message available
-    return 0;
+    address = 0x04;
+  } else {
+    // no message available
+    return 0x00;
   }
 
 #ifdef SPI_HAS_TRANSACTION
@@ -237,7 +230,7 @@ uint8_t CAN::receive(msg &message)
 #endif
   fastDigitalWrite(MCP2515_CS, LOW);
 
-  spiwrite(addr);
+  spiwrite(SPI_READ_RX | address);
 
   // read id
   message.id  = spiread() << 3;
@@ -263,13 +256,15 @@ uint8_t CAN::receive(msg &message)
 #endif
 
   // clear interrupt flag
-  if (bit_is_set(status, 6)) {
-    mcp2515_bit_modify(CANINTF, _BV(RX0IF), 0x00);
+  uint8_t flag;
+  if (address) {
+    flag = _BV(RX1IF);
   }	else {
-    mcp2515_bit_modify(CANINTF, _BV(RX1IF), 0x00);
+    flag = _BV(RX0IF);
   }
+  mcp2515_bit_modify(CANINTF, flag, 0x00);
 
-  return (status & 0x07) + 1;
+  return flag;
 }
 // ----------------------------------------------------------------------------
 /*

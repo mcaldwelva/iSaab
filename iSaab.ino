@@ -157,42 +157,55 @@ inline __attribute__((always_inline))
 void displayRequest(CAN::msg &msg) {
   char *text;
   int8_t wanted = cdc.getText(text);
-  uint8_t row = msg.data[0];
 
-  if (row != 0x00) {
+  if (msg.data[0] == 0x00) {
     if (wanted) {
       // check display owner
-      if (msg.data[1] == 0x12) {
-        // send text
-        msg.id = TX_SID_TEXT;
-        msg.data[1] = 0x96;
+      switch (msg.data[1]) {
+        case 0x12: // iSaab
+          // send text
+          msg.id = TX_SID_TEXT;
+          msg.data[1] = 0x96;
 
-        for (int8_t id = 2, i = (row-1)*12; id >= 0; id--) {
-          msg.data[0] = id;
-          if (id == 2) msg.data[0] |= 0x40;
-          msg.data[2] = row | 0x80;
+          for (int8_t id = 5, i = 0; id >= 0; id--) {
+            msg.data[0] = id;
+            if (id == 5) msg.data[0] |= 0x40;
 
-          // copy text
-          msg.data[3] = text[i++];
-          msg.data[4] = text[i++];
-          msg.data[5] = text[i++];
-          msg.data[6] = text[i++];
-          msg.data[7] = text[i++];
-          while (ibus.send(msg) == 0xff);
-        }
+            msg.data[2] = (id < 3) ? 82 : 81;
+//            if (wanted < 0) msg.data[2] |= 0x80;
 
-        msg.data[2] = 0x05; // keep
-      } else {
-        msg.data[2] = 0x03; // want
+            // copy text
+            msg.data[3] = text[i++];
+            msg.data[4] = text[i++];
+            if (id % 3) {
+              msg.data[5] = text[i++];
+              msg.data[6] = text[i++];
+              msg.data[7] = text[i++];
+            } else {
+              msg.data[5] = 0x00;
+              msg.data[6] = 0x00;
+              msg.data[7] = 0x00;
+            }
+            while (ibus.send(msg) == 0xff);
+          }
+
+          msg.data[2] = 0x05;
+          break;
+        case 0xff: // available
+          msg.data[2] = 0x03;
+          break;
+        default: // taken
+          msg.data[2] = 0xff;
+          break;
       }
     } else {
-      msg.data[2] = 0xff;   // done
+      msg.data[2] = 0xff;
     }
 
     // display request
     msg.id = TX_SID_REQUEST;
     msg.data[0] = 0x1f; // device
-    msg.data[1] = row;  // row
+    msg.data[1] = 0x00; // row
     msg.data[3] = 0x12; // priority
     msg.data[4] = 0x00;
     msg.data[5] = 0x00;
