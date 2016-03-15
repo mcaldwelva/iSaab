@@ -37,7 +37,7 @@ String AudioFile::getTag(uint8_t tag) {
 
 // copy ascii/wide/unicode string to ascii
 void AudioFile::asciiStringCopy(String &dst, char src[], uint8_t dsize, uint8_t ssize) {
-  for (uint8_t i = 0, j = 0; i < ssize && j < dsize; i++) {
+  for (uint8_t i = 0; i < ssize && dst.length() < dsize; i++) {
     if (32 <= src[i] && src[i] <= 126) {
       dst += src[i];
     }
@@ -114,11 +114,11 @@ void AudioFile::readVorbisComments() {
   tag_size = BE8x4(buffer);
   seek(position() + tag_size);
 
-  // get number of other comments
+  // get number of tags
   read(buffer, 4);
   tag_count = BE8x4(buffer);
 
-  // search through comments
+  // search through tags
   for (int i = 0; i < tag_count; i++) {
     // read field size
     read(buffer, 4);
