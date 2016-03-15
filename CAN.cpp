@@ -188,7 +188,7 @@ uint8_t CAN::send(const msg &message) {
   // flag the buffer for transmission
   mcp2515_bit_modify(ctrlreg, _BV(TXREQ) | _BV(TXP1) | _BV(TXP0), _BV(TXREQ) | priority);
 
-  return id;
+  return address;
 }
 // ----------------------------------------------------------------------------
 /*
