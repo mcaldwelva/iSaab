@@ -13,11 +13,9 @@
 class CAN
 {
   public:
-    typedef struct
-    {
+    typedef struct {
       uint16_t id;
-      struct
-      {
+      struct {
         int8_t rtr : 1;
         uint8_t length : 4;
       } header;
@@ -25,9 +23,10 @@ class CAN
     } msg;
 
     void begin(uint16_t speed);
-    uint8_t send(const msg &message);
-    uint8_t receive(msg &message);
-    uint8_t available();
+    bool send(const msg &message);
+    bool receive(msg &message);
+    bool available() { return (!fastDigitalRead(MCP2515_IRQ)); };
+
     void setMode(uint8_t mode);
     void setFilters(const uint16_t filters[] PROGMEM, const uint16_t masks[] PROGMEM);
     void setLowPriorityInterrupts(bool enabled);
@@ -38,7 +37,6 @@ class CAN
     void mcp2515_write_register(uint8_t address, uint8_t data);
     uint8_t mcp2515_read_status(uint8_t type);
     void mcp2515_bit_modify(uint8_t address, uint8_t mask, uint8_t data);
-    uint8_t mcp2515_check_free_buffer();
     uint8_t mcp2515_read_register(uint8_t address);
 };
 
@@ -62,8 +60,6 @@ class CAN
 #define SPI_READ_STATUS   0xA0
 #define	SPI_RX_STATUS     0xB0
 #define	SPI_BIT_MODIFY    0x05
-
-
 
 #define RXF0SIDH  0x00
 #define RXF0SIDL  0x01
@@ -296,9 +292,7 @@ class CAN
 //TXBnSIDL (n = 0, 1)
 #define	EXIDE	3
 
-
 //RXB1CTRL
-
 #define FILHIT2		2
 #define FILHIT1		1
 
@@ -306,9 +300,7 @@ class CAN
 #define	SRR		4
 #define	IDE		3
 
-
 //RXBnDLC (n = 0, 1)
-
 #define	RTR			6
 #define	DLC3		3
 #define	DLC2		2

@@ -11,9 +11,6 @@
  *   4. Removed global vars and buffer implementation to save memory
  *   5. Added Wake-on-CAN and toggle both LED's
  *
- *  10/09/2015 Mike C. - Adjusted speed settings:
- *  http://www.microchip.com/forums/m/tm.aspx?m=236967&p=2
- *
  *  03/04/2016 Mike C. - Modified send function:
  *   guarantees transmission order of up to 12 consecutive messages
  */
@@ -24,9 +21,7 @@
 
 #define MCP2515_SPI_SETTING SPISettings(10000000, MSBFIRST, SPI_MODE0)
 
-/******************************************************************************
- * PUBLIC METHODS
- ******************************************************************************/
+// setup pins, connect to CAN bus at the requested speed, begin accepting messages
 void CAN::begin(uint16_t speed) {
   pinMode(MCP2515_CS, OUTPUT);
   digitalWrite(MCP2515_CS, HIGH);
@@ -35,8 +30,7 @@ void CAN::begin(uint16_t speed) {
 
   SPI.begin();
 
-  // reset MCP2515 by software reset.
-  // After this he is in configuration mode.
+  // reset MCP2515 to clear registers and put it into configuration mode
 #ifdef SPI_HAS_TRANSACTION
   SPI.beginTransaction(MCP2515_SPI_SETTING);
 #endif
@@ -49,7 +43,7 @@ void CAN::begin(uint16_t speed) {
   SPI.endTransaction();
 #endif
 
-  // wait a little bit until the MCP2515 has restarted
+  // wait for reset to complete
   delayMicroseconds(10);
 
   // configure bus speed
@@ -57,6 +51,7 @@ void CAN::begin(uint16_t speed) {
   switch (speed)
   {
     case 47:
+      // http://www.microchip.com/forums/m/tm.aspx?m=236967&p=2
       cnf1 = 0xc7; cnf2 = 0xbe; cnf3 = 0x44;
       break;
     case 1:
@@ -82,39 +77,24 @@ void CAN::begin(uint16_t speed) {
   mcp2515_write_register(CNF2, cnf2);
   mcp2515_write_register(CNF3, cnf3);
 
-  //Activamos Interrupcion de RX
-  mcp2515_write_register(CANINTE, _BV(RX0IE)); // Only buffer 0 activates interrupt
+  // only RXB0 activates interrupt
+  mcp2515_write_register(CANINTE, _BV(RX0IE));
 
-  //Filtros
-  //Bufer 0: Todos los msjes y Rollover=>Si buffer 0 lleno,envia a buffer 1
-  mcp2515_write_register(RXB0CTRL, _BV(RXM1) | _BV(RXM0) | _BV(BUKT)); //RXM1 y RXM0 para filter/mask off+Rollover
-  //Bufer 1: Todos los msjes
-  mcp2515_write_register(RXB1CTRL, _BV(RXM1) | _BV(RXM0)); //RXM1 y RXM0 para filter/mask off
+  // RXB0: accept all messages, allow rollover to RXB1
+  mcp2515_write_register(RXB0CTRL, _BV(RXM1) | _BV(RXM0) | _BV(BUKT));
+  // RXB1: accept all messages
+  mcp2515_write_register(RXB1CTRL, _BV(RXM1) | _BV(RXM0));
 
   // light up the corresponding LED when a buffer is occupied
   mcp2515_write_register(BFPCTRL, _BV(B1BFE) | _BV(B1BFM) | _BV(B0BFE) | _BV(B0BFM));
 
-  //Pasar el MCP2515 a modo normal
+  // standard operating mode
   setMode(NORMAL_MODE);
 }
-// ----------------------------------------------------------------------------
-/*
-Name:send(message)
-Parameters(type):
-	message(mesCAN):message to be sent
-Description:
-	It sends through the bus the message passed by reference
-Returns:
-	0xFF: if 2515's tx-buffer is full
-	0x01: if when 2515's TxBuffer[0] used
-	0x02: if when 2515's TxBuffer[1] used
-	0x04: if when 2515's TxBuffer[2] used
-Example:
-	uint8_t count = 0;
-	while(CAN.send(CAN_TxMsg)==0xFF && count < 15);
 
-*/
-uint8_t CAN::send(const msg &message) {
+
+// transmit a message in the order it was presented
+bool CAN::send(const msg &message) {
   static uint8_t id;
   uint8_t status = mcp2515_read_status(SPI_READ_STATUS);
 
@@ -129,7 +109,7 @@ uint8_t CAN::send(const msg &message) {
 
   // if that buffer isn't available we're done
   if (bit_is_set(status, address + 2)) {
-    return 0xff;
+    return false;
   }
 
   // decrement id, skipping invalid addresses
@@ -188,24 +168,12 @@ uint8_t CAN::send(const msg &message) {
   // flag the buffer for transmission
   mcp2515_bit_modify(ctrlreg, _BV(TXREQ) | _BV(TXP1) | _BV(TXP0), _BV(TXREQ) | priority);
 
-  return address;
+  return true;
 }
-// ----------------------------------------------------------------------------
-/*
-Name:receive(message)
-Parameters(type):
-	message(msg): Message passed by reference to be filled with the new
-			  message coming fron the 2515 drvier
-Description:
-	Receives by parameter a struct msgCAN
-Returns(uint8_t):
-	last 3 bits of 2515's status. More in the
-Example:
-	if(CAN.receive(message))
-	{
-	}
-*/
-uint8_t CAN::receive(msg &message) {
+
+
+// read the highest priority message available and clear its buffer
+bool CAN::receive(msg &message) {
   uint8_t address;
 
   // buffer 0 has the higher priority
@@ -218,7 +186,7 @@ uint8_t CAN::receive(msg &message) {
     address = 0x04;
   } else {
     // no message available
-    return 0x00;
+    return false;
   }
 
 #ifdef SPI_HAS_TRANSACTION
@@ -239,7 +207,7 @@ uint8_t CAN::receive(msg &message) {
   // read DLC
   uint8_t length = spiread() & 0x0f;
   message.header.length = length;
-  message.header.rtr = bit_is_set(status, 3) ? 1 : 0;
+  message.header.rtr = bit_is_set(status, RXRTR) ? 1 : 0;
 
   // read data
   for (uint8_t t = 0; t < length; t++) {
@@ -260,49 +228,13 @@ uint8_t CAN::receive(msg &message) {
   }
   mcp2515_bit_modify(CANINTF, flag, 0x00);
 
-  return flag;
+  return true;
 }
-// ----------------------------------------------------------------------------
-/*
-Name: available()
-Parameters(type):
-	None
-Description:
-	Polls interrption bit
-Returns:
-	0: if there is not messages waiting in the converter
-	1: if there is
-Example:
-	if (CAN.available())
 
-*/
-uint8_t CAN::available()
-{
-  return (!fastDigitalRead(MCP2515_IRQ));
-}
-// ----------------------------------------------------------------------------
-/*
-Name: setMode(mode)
 
-Parameters(type):
-	uint8_t mode
-
-Description:
-	The MCP2515 has five modes of operation. This function configures:
-		0. Normal mode
-		1. Sleep mode
-		2. Loopback mode
-		3. Listen-Only mode
-		4. Configuration mode
-
-Returns:
-	Nothing
-
-Example:
-	CAN.setMode(SLEEP_MODE);
-*/
-void CAN::setMode(uint8_t mode)
-{
+// change the operating mode of the can chip
+// NORMAL_MODE, SLEEP_MODE, LOOPBACK_MODE, LISTEN_ONLY_MODE, CONFIG_MODE
+void CAN::setMode(uint8_t mode) {
   // don't set invalid modes
   if (mode > CONFIG_MODE)
     return;
@@ -324,28 +256,14 @@ void CAN::setMode(uint8_t mode)
   // wait until the mode has been changed
   while ((mcp2515_read_register(CANSTAT) & (_BV(REQOP2) | _BV(REQOP1) | _BV(REQOP0))) != mode);
 }
-// ----------------------------------------------------------------------------
-/*
-Name: setFilter
-
-Parameters(type):
-	uint8_t mode
-
-Description:
 
 
-Returns:
-	Nothing
-
-Example:
-
-*/
-void CAN::setFilters(const uint16_t filters[] PROGMEM, const uint16_t masks[] PROGMEM)
-{
+// enable message id filtering
+void CAN::setFilters(const uint16_t filters[] PROGMEM, const uint16_t masks[] PROGMEM) {
   uint16_t filter;
   setMode(CONFIG_MODE);
 
-  //Buffer RXB0 => Filter 0-1 & Mask 0
+  // set high priority filter id's for RXB0
   filter = pgm_read_word_near(filters + 0);
   mcp2515_write_register(RXF0SIDH, filter >> 3);
   mcp2515_write_register(RXF0SIDL, filter << 5);
@@ -354,13 +272,12 @@ void CAN::setFilters(const uint16_t filters[] PROGMEM, const uint16_t masks[] PR
   mcp2515_write_register(RXF1SIDH, filter >> 3);
   mcp2515_write_register(RXF1SIDL, filter << 5);
 
-  //Mask 0
+  // set high pirority bit mask for RXB0
   filter = pgm_read_word_near(masks + 0);
   mcp2515_write_register(RXM0SIDH, filter >> 3);
   mcp2515_write_register(RXM0SIDL, filter << 5);
-  //---------------------------------------------------------------
 
-  //Buffer RXB1 => Filter 2-5 & Mask 1
+  // set low priority filter id's for RXB1
   filter = pgm_read_word_near(filters + 2);
   mcp2515_write_register(RXF2SIDH, filter >> 3);
   mcp2515_write_register(RXF2SIDL, filter << 5);
@@ -377,54 +294,27 @@ void CAN::setFilters(const uint16_t filters[] PROGMEM, const uint16_t masks[] PR
   mcp2515_write_register(RXF5SIDH, filter >> 3);
   mcp2515_write_register(RXF5SIDL, filter << 5);
 
-  // Mask1
+  // set low priority bit mask for RXB1
   filter = pgm_read_word_near(masks + 1);
   mcp2515_write_register(RXM1SIDH, filter >> 3);
   mcp2515_write_register(RXM1SIDL, filter << 5);
 
-
-  //Buffer configuration
-  //Bufer 0
+  // RXB0: accept only standard id's that match the high priority filters
   mcp2515_bit_modify(RXB0CTRL, _BV(RXM1) | _BV(RXM0), _BV(RXM0));
-  //Bufer 1
+  // RXB1: accept only standard id's that match the low priority filters
   mcp2515_bit_modify(RXB1CTRL, _BV(RXM1) | _BV(RXM0), _BV(RXM0));
 
   setMode(NORMAL_MODE);
 }
-// ----------------------------------------------------------------------------
+
 
 // enable/disable interrupts for low priority messages
-void CAN::setLowPriorityInterrupts(bool enabled)
-{
+void CAN::setLowPriorityInterrupts(bool enabled) {
   mcp2515_bit_modify(CANINTE, _BV(RX1IE), enabled ? 0xff : 0x00);
 }
 
 
-
-
-
-
-
-/******************************************************************************
- * PRIVATE METHODS
- ******************************************************************************/
-
-// -------------------------------------------------------------------------
-inline __attribute__((always_inline))
-uint8_t CAN::spiread()
-{
-  return SPI.transfer(0x00);
-}
-
-inline __attribute__((always_inline))
-void CAN::spiwrite(uint8_t c)
-{
-  SPI.transfer(c);
-}
-
-// -------------------------------------------------------------------------
-void CAN::mcp2515_write_register( uint8_t address, uint8_t data )
-{
+void CAN::mcp2515_write_register( uint8_t address, uint8_t data ) {
 #ifdef SPI_HAS_TRANSACTION
   SPI.beginTransaction(MCP2515_SPI_SETTING);
 #endif
@@ -439,9 +329,9 @@ void CAN::mcp2515_write_register( uint8_t address, uint8_t data )
   SPI.endTransaction();
 #endif
 }
-// ----------------------------------------------------------------------------
-uint8_t CAN::mcp2515_read_status(uint8_t type)
-{
+
+
+uint8_t CAN::mcp2515_read_status(uint8_t type) {
   uint8_t data;
 
 #ifdef SPI_HAS_TRANSACTION
@@ -459,9 +349,9 @@ uint8_t CAN::mcp2515_read_status(uint8_t type)
 
   return data;
 }
-// -------------------------------------------------------------------------
-void CAN::mcp2515_bit_modify(uint8_t address, uint8_t mask, uint8_t data)
-{
+
+
+void CAN::mcp2515_bit_modify(uint8_t address, uint8_t mask, uint8_t data) {
 #ifdef SPI_HAS_TRANSACTION
   SPI.beginTransaction(MCP2515_SPI_SETTING);
 #endif
@@ -477,21 +367,9 @@ void CAN::mcp2515_bit_modify(uint8_t address, uint8_t mask, uint8_t data)
   SPI.endTransaction();
 #endif
 }
-// ----------------------------------------------------------------------------
-uint8_t CAN::mcp2515_check_free_buffer()
-{
-  uint8_t status = mcp2515_read_status(SPI_READ_STATUS);
 
-  if ((status & 0x54) == 0x54) {
-    // all buffers used
-    return false;
-  }
 
-  return true;
-}
-// ----------------------------------------------------------------------------
-uint8_t CAN::mcp2515_read_register(uint8_t address)
-{
+uint8_t CAN::mcp2515_read_register(uint8_t address) {
   uint8_t data;
 
 #ifdef SPI_HAS_TRANSACTION
@@ -510,4 +388,16 @@ uint8_t CAN::mcp2515_read_register(uint8_t address)
 
   return data;
 }
-// ----------------------------------------------------------------------------
+
+
+inline __attribute__((always_inline))
+uint8_t CAN::spiread() {
+  return SPI.transfer(0x00);
+}
+
+inline __attribute__((always_inline))
+void CAN::spiwrite(uint8_t c) {
+  SPI.transfer(c);
+}
+
+

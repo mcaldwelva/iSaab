@@ -100,7 +100,7 @@ void presenceRequest(CAN::msg &msg) {
   }
   msg.data[0] = 0x32;
   msg.data[6] = 0x00;
-  while (ibus.send(msg) == 0xff);
+  while (!ibus.send(msg));
 }
 
 
@@ -149,7 +149,7 @@ void controlRequest(CAN::msg &msg) {
 
   // get current status
   cdc.getStatus(msg.data);
-  while (ibus.send(msg) == 0xff);
+  while (!ibus.send(msg));
 }
 
 
@@ -186,7 +186,7 @@ void displayRequest(CAN::msg &msg) {
               msg.data[6] = 0x00;
               msg.data[7] = 0x00;
             }
-            while (ibus.send(msg) == 0xff);
+            while (!ibus.send(msg));
           }
 
           msg.data[2] = 0x05;
@@ -211,7 +211,7 @@ void displayRequest(CAN::msg &msg) {
     msg.data[5] = 0x00;
     msg.data[6] = 0x00;
     msg.data[7] = 0x00;
-    while (ibus.send(msg) == 0xff);
+    while (!ibus.send(msg));
   }
 }
 
