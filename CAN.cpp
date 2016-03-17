@@ -11,8 +11,10 @@
  *   4. Removed global vars and buffer implementation to save memory
  *   5. Added Wake-on-CAN and toggle both LED's
  *
- *  03/04/2016 Mike C. - Modified send function:
- *   guarantees transmission order of up to 12 consecutive messages
+ *  03/04/2016 Mike C. - More changes:
+ *   1. send: guarantees transmission order of up to 12 consecutive messages
+ *   2. receive: get RTR bit from the right place
+ *   3. simplified public interface
  */
 
 #include <SPI.h>
@@ -48,8 +50,7 @@ void CAN::begin(uint16_t speed) {
 
   // configure bus speed
   uint8_t cnf1, cnf2, cnf3;
-  switch (speed)
-  {
+  switch (speed) {
     case 47:
       // http://www.microchip.com/forums/m/tm.aspx?m=236967&p=2
       cnf1 = 0xc7; cnf2 = 0xbe; cnf3 = 0x44;
@@ -135,8 +136,7 @@ bool CAN::send(const msg &message) {
   if (message.header.rtr) {
     // a rtr-frame has a length, but contains no data
     spiwrite(_BV(RTR) | length);
-  }
-  else {
+  } else {
     // set message length
     spiwrite(length);
 
@@ -197,8 +197,9 @@ bool CAN::receive(msg &message) {
   spiwrite(SPI_READ_RX | address);
 
   // read id
-  message.id  = spiread() << 3;
-  message.id |= spiread() >> 5;
+  message.id = spiread() << 3;
+  uint8_t sidl = spiread();
+  message.id |= sidl >> 5;
 
   // skip extended id
   spiread();
@@ -207,7 +208,7 @@ bool CAN::receive(msg &message) {
   // read DLC
   uint8_t length = spiread() & 0x0f;
   message.header.length = length;
-  message.header.rtr = bit_is_set(status, RXRTR) ? 1 : 0;
+  message.header.rtr = bit_is_set(sidl, SRR);
 
   // read data
   for (uint8_t t = 0; t < length; t++) {
@@ -259,43 +260,43 @@ void CAN::setMode(uint8_t mode) {
 
 
 // enable message id filtering
-void CAN::setFilters(const uint16_t filters[] PROGMEM, const uint16_t masks[] PROGMEM) {
+void CAN::setFilters(const uint16_t high[] PROGMEM, const uint16_t low[] PROGMEM) {
   uint16_t filter;
   setMode(CONFIG_MODE);
 
   // set high priority filter id's for RXB0
-  filter = pgm_read_word_near(filters + 0);
+  filter = pgm_read_word_near(high + 0);
   mcp2515_write_register(RXF0SIDH, filter >> 3);
   mcp2515_write_register(RXF0SIDL, filter << 5);
 
-  filter = pgm_read_word_near(filters + 1);
+  filter = pgm_read_word_near(high + 1);
   mcp2515_write_register(RXF1SIDH, filter >> 3);
   mcp2515_write_register(RXF1SIDL, filter << 5);
 
   // set high pirority bit mask for RXB0
-  filter = pgm_read_word_near(masks + 0);
+  filter = pgm_read_word_near(high + 2);
   mcp2515_write_register(RXM0SIDH, filter >> 3);
   mcp2515_write_register(RXM0SIDL, filter << 5);
 
   // set low priority filter id's for RXB1
-  filter = pgm_read_word_near(filters + 2);
+  filter = pgm_read_word_near(low + 0);
   mcp2515_write_register(RXF2SIDH, filter >> 3);
   mcp2515_write_register(RXF2SIDL, filter << 5);
 
-  filter = pgm_read_word_near(filters + 3);
+  filter = pgm_read_word_near(low + 1);
   mcp2515_write_register(RXF3SIDH, filter >> 3);
   mcp2515_write_register(RXF3SIDL, filter << 5);
 
-  filter = pgm_read_word_near(filters + 4);
+  filter = pgm_read_word_near(low + 2);
   mcp2515_write_register(RXF4SIDH, filter >> 3);
   mcp2515_write_register(RXF4SIDL, filter << 5);
 
-  filter = pgm_read_word_near(filters + 5);
+  filter = pgm_read_word_near(low + 3);
   mcp2515_write_register(RXF5SIDH, filter >> 3);
   mcp2515_write_register(RXF5SIDL, filter << 5);
 
   // set low priority bit mask for RXB1
-  filter = pgm_read_word_near(masks + 1);
+  filter = pgm_read_word_near(low + 4);
   mcp2515_write_register(RXM1SIDH, filter >> 3);
   mcp2515_write_register(RXM1SIDL, filter << 5);
 

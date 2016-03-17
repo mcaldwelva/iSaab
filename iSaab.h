@@ -39,10 +39,8 @@
 
 
 // only accept these messages
-const uint16_t ibus_filters[] PROGMEM =
-  {RX_CDC_PRESENT, RX_CDC_CONTROL, RX_SID_PRIORITY, 0x000, 0x000, 0x000};
-const uint16_t ibus_masks[] PROGMEM =
-  {0x7ff, 0x7ff};
+const uint16_t high_filters[] PROGMEM = {RX_CDC_PRESENT, RX_CDC_CONTROL, 0x7ff};
+const uint16_t low_filters[] PROGMEM = {RX_SID_PRIORITY, 0x000, 0x000, 0x000, 0x7ff};
 
 
 // prototypes

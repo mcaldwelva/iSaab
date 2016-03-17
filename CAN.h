@@ -16,7 +16,7 @@ class CAN
     typedef struct {
       uint16_t id;
       struct {
-        int8_t rtr : 1;
+        bool rtr : 1;
         uint8_t length : 4;
       } header;
       uint8_t data[8];
@@ -28,7 +28,7 @@ class CAN
     bool available() { return (!fastDigitalRead(MCP2515_IRQ)); };
 
     void setMode(uint8_t mode);
-    void setFilters(const uint16_t filters[] PROGMEM, const uint16_t masks[] PROGMEM);
+    void setFilters(const uint16_t high[] PROGMEM, const uint16_t low[] PROGMEM);
     void setLowPriorityInterrupts(bool enabled);
 
   private:
