@@ -110,9 +110,13 @@ bool VS1053::startTrack() {
 void VS1053::playTrack() {
   // stay here as long as we need to
   while ((state == Playing || state == Rapid) && currentTrack && readyForData()) {
-    uint8_t *buffer;
-    uint16_t bytesRead = currentTrack.readBlock(buffer);
-    sendData(buffer, bytesRead);
+    uint16_t bytesRead;
+
+    ATOMIC_BLOCK(ATOMIC_FORCEON) {
+      uint8_t *buffer;
+      bytesRead = currentTrack.readBlock(buffer);
+      sendData(buffer, bytesRead);
+    }
 
     // close the file if there's no more data to read
     if (bytesRead == 0) {
