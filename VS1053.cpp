@@ -106,17 +106,13 @@ bool VS1053::startTrack() {
 }
 
 
-// transfer as much data from file as needed to fill the card's internal buffer
+// transfer as much data from file as needed to fill the chip's internal buffer
 void VS1053::playTrack() {
   // stay here as long as we need to
-  while (state == Playing && currentTrack && readyForData()) {
-    uint16_t bytesRead;
-
-    ATOMIC_BLOCK(ATOMIC_FORCEON) {
-      uint8_t *buffer;
-      bytesRead = currentTrack.readBlock(buffer);
-      sendData(buffer, bytesRead);
-    }
+  while ((state == Playing || state == Rapid) && currentTrack && readyForData()) {
+    uint8_t *buffer;
+    uint16_t bytesRead = currentTrack.readBlock(buffer);
+    sendData(buffer, bytesRead);
 
     // close the file if there's no more data to read
     if (bytesRead == 0) {
