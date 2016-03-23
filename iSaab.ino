@@ -22,8 +22,7 @@ void setup() {
   cdc.setup();
 
   // open I-Bus @ 47.619Kbps
-  ibus.begin(47);
-  ibus.setFilters(high_filters, low_filters);
+  ibus.begin(47, high_filters, low_filters);
 
   // use IRQ for incoming messages
 #ifdef SPI_HAS_TRANSACTION

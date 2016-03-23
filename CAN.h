@@ -10,8 +10,7 @@
 // CLASS
 //----------------------------------------------------------------------------
 
-class CAN
-{
+class CAN {
   public:
     typedef struct {
       uint16_t id;
@@ -22,34 +21,31 @@ class CAN
       uint8_t data[8];
     } msg;
 
-    void begin(uint16_t speed);
+    void begin(uint16_t speed, const uint16_t high[] PROGMEM = NULL, const uint16_t low[] PROGMEM = NULL);
     bool send(const msg &message);
     bool receive(msg &message);
     bool available() { return (!fastDigitalRead(MCP2515_IRQ)); };
 
-    void setMode(uint8_t mode);
-    void setFilters(const uint16_t high[] PROGMEM, const uint16_t low[] PROGMEM);
+    enum Mode : uint8_t { Normal = 0x00, Sleep = 0x20, Loopback = 0x40, ListenOnly = 0x60, Config = 0x80 };
+    void setMode(Mode mode);
     void setLowPriorityInterrupts(bool enabled);
 
   private:
+    void setFilters(const uint16_t high[] PROGMEM, const uint16_t low[] PROGMEM);
+
+    uint8_t readStatus(uint8_t type);
+    uint8_t readRegister(uint8_t address);
+    void writeRegister(uint8_t address, uint8_t data);
+    void modifyRegister(uint8_t address, uint8_t mask, uint8_t data);
+
     void spiwrite(uint8_t);
     uint8_t spiread();
-    void mcp2515_write_register(uint8_t address, uint8_t data);
-    uint8_t mcp2515_read_status(uint8_t type);
-    void mcp2515_bit_modify(uint8_t address, uint8_t mask, uint8_t data);
-    uint8_t mcp2515_read_register(uint8_t address);
 };
 
 
 //----------------------------------------------------------------------------
 // MCP2515 DEFINITIONS
 //----------------------------------------------------------------------------
-
-#define CONFIG_MODE       _BV(REQOP2)
-#define LISTEN_ONLY_MODE  _BV(REQOP1)|_BV(REQOP0)
-#define LOOPBACK_MODE     _BV(REQOP1)
-#define SLEEP_MODE        _BV(REQOP0)
-#define NORMAL_MODE       0x00
 
 #define SPI_RESET         0xC0
 #define	SPI_READ          0x03
@@ -307,11 +303,6 @@ class CAN
 #define	DLC1		1
 #define DLC0		0
 
-
 //----------------------------------------------------------------------------
-
-
-
-
 
 #endif // CAN_H
