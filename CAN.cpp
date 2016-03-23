@@ -243,7 +243,7 @@ void CAN::setMode(uint8_t mode) {
   // enable/disable Wake-on-CAN
   switch (mode) {
     case SLEEP_MODE:
-      mcp2515_bit_modify(CANINTE, _BV(WAKIE), _BV(WAKIE));
+      mcp2515_bit_modify(CANINTE, _BV(WAKIE), 0xff);
       break;
     case NORMAL_MODE:
       mcp2515_bit_modify(CANINTE, _BV(WAKIE), 0x00);

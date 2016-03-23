@@ -7,8 +7,6 @@
 #ifndef iSaab_H
 #define iSaab_H
 
-#define IBUS_PACKET_SIZE         8
-
 /**
  * CDC presence
  * http://pikkupossu.1g.fi/tomi/projects/i-bus/i-bus.html#6A1
