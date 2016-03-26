@@ -25,9 +25,10 @@ Player::Player() {
   trackNext = 0;
 
   // no music files in the root
-  path[0].min = 0;
-  path[0].max = 0;
-  path[0].folder = 0;
+  path[0].iFolder = 0;
+  path[0].iFile = 0;
+  path[0].nFiles = 0;
+  path[0].hasFolders = true;
 }
 
 
@@ -71,7 +72,7 @@ bool Player::begin() {
     }
 
     // open SD root
-    path[0].dir = SD.open(F("/"));
+    path[0].h = SD.open(F("/"));
 
     // load FLAC patch
     loadPlugin(F("PATCH053.BIN"));
@@ -100,12 +101,12 @@ void Player::end() {
     
     // collapse path structure
     while (depth > 0) {
-      path[depth].dir.close();
+      path[depth].h.close();
       depth--;
     }
 
     // close root
-    path[0].dir.close();
+    path[0].h.close();
 
     // turn off sound card
     VS1053::end();
@@ -237,7 +238,7 @@ void Player::nextDisc() {
     display.tag = (abs(display.tag) + 1) % (AudioFile::MAX_TAG_ID + 1);
     updateText();
   } else {
-    trackNext = path[depth].max;
+    trackNext = (path[depth].iFile + path[depth].nFiles);
     stopTrack();
   }
 }
@@ -350,26 +351,26 @@ void Player::getStatus(uint8_t data[]) {
   if (trackNext == UNKNOWN) {
     // playing current track
     time = trackTime();
-    track = trackNum - path[depth].min + 1;
-    disc = path[depth].folder;
+    track = trackNum - path[depth].iFile + 1;
+    disc = path[depth].iFolder;
   }
-  else if (trackNext >= path[depth].max) {
+  else if (trackNext >= (path[depth].iFile + path[depth].nFiles)) {
     // new track is on the next disc
     time = 0;
-    track = trackNext - path[depth].max + 1;
-    disc = path[depth].folder + 1;
+    track = trackNext - (path[depth].iFile + path[depth].nFiles) + 1;
+    disc = path[depth].iFolder + 1;
   }
-  else if (trackNext < path[depth].min) {
+  else if (trackNext < path[depth].iFile) {
     // new track is on the previous disc
     time = 0;
     track = 100 - (trackNum - trackNext);
-    disc = path[depth].folder - 1;
+    disc = path[depth].iFolder - 1;
   }
   else {
     // new track is on the current disc
     time = 0;
-    track = trackNext - path[depth].min + 1;
-    disc = path[depth].folder;
+    track = trackNext - path[depth].iFile + 1;
+    disc = path[depth].iFolder;
   }
 
   // married, random
@@ -397,7 +398,7 @@ void Player::getStatus(uint8_t data[]) {
   data[3] = (state == Paused) ? Playing : state;
 
   // disc
-  data[3] |= disc % 6 + 1;
+  data[3] |= disc % 9 + 1;
 
   // full magazine
   data[2] = 0b00111111;
@@ -453,11 +454,11 @@ void Player::dumpPath() {
   for (int i = 0; i <= depth; i++) {
     Serial.print(i, DEC);
     Serial.print(":");
-    Serial.print(path[i].dir.name());
-    Serial.print(F(", min:"));
-    Serial.print(path[i].min);
-    Serial.print(F(", max:"));
-    Serial.print(path[i].max);
+    Serial.print(path[i].h.name());
+    Serial.print(F(", index:"));
+    Serial.print(path[i].iFile);
+    Serial.print(F(", files:"));
+    Serial.print(path[i].nFiles);
     Serial.println();
   }
 
@@ -477,26 +478,31 @@ void Player::openNextTrack() {
 #endif
 
   // collapse current path as necessary
-  while (path[depth].min > trackNext) {
-    path[depth].dir.close();
+  while (path[depth].iFile > trackNext) {
+    path[depth].h.close();
     depth--;
   }
 
 top:
-  dir_count = path[depth].folder;
+  dir_count = path[depth].iFolder;
+
+  // determine where to start in the current directory
   if (trackNext > trackNum) {
     // start with the current file
     file_count = trackNum + 1;
 
     // was this the last file in the directory?
-    if (file_count == path[depth].max) {
-      path[depth].dir.rewindDirectory();
+    if (file_count == (path[depth].iFile + path[depth].nFiles)) {
+      // count this folder if it contained files
       dir_count++;
+
+      // rewind if it contained folders we can explore
+      if (path[depth].hasFolders && depth < MAX_DEPTH - 1) path[depth].h.rewindDirectory();
     }
   } else {
     // start at the top of the directory
-    file_count = path[depth].min;
-    path[depth].dir.rewindDirectory();
+    file_count = path[depth].iFile;
+    path[depth].h.rewindDirectory();
   }
 
 #if (DEBUGMODE==1)
@@ -506,16 +512,13 @@ top:
 
   // search from here until we find our file
   while (file_count <= trackNext) {
-    if (state == Off) {
-      // the rug's been pulled out from under us
-      return;
-    }
-    entry = path[depth].dir.openNextFile();
+    // is the filesystem still available?
+    if (state == Off) return;
 
-    // explore this directory if we haven't already
-    // or we've already explored this directory and we
-    // know the file is in here
-    if (file_count < path[depth].max) {
+    // explore this directory if we haven't already or we've already 
+    // explored this directory and we know the file is in here
+    entry = path[depth].h.openNextFile();
+    if (file_count < (path[depth].iFile + path[depth].nFiles)) {
       while (entry) {
         if (!entry.isDirectory()) {
 #if (DEBUGMODE==2)
@@ -524,7 +527,7 @@ top:
           Serial.println(entry.name());
 #endif
 
-          if (file_count++ == trackNext && path[depth].max != UNKNOWN) {
+          if (file_count++ == trackNext && path[depth].nFiles != MAX_FILES) {
             // this is the file we're looking for
             goto done;
           } else {
@@ -534,28 +537,32 @@ top:
         } else {
           // skip this directory
           entry.close();
+          path[depth].hasFolders = true;
         }
-        entry = path[depth].dir.openNextFile();
+        entry = path[depth].h.openNextFile();
       }
 
       // we know how many files are in this dir now
-      path[depth].max = file_count;
-      path[depth].dir.rewindDirectory();
+      path[depth].nFiles = file_count - path[depth].iFile;
 
       // if we've discovered the new track
       if (file_count > trackNext) { 
-        // rollback the file count
-        file_count = path[depth].min;
+        // start from the top of the directory
+        file_count = path[depth].iFile;
+        path[depth].h.rewindDirectory();
       } else {
         // count this folder if it contained files
-        if (path[depth].min != path[depth].max) dir_count++;
+        if (path[depth].nFiles) dir_count++;
+
+        // rewind if it contained folders we can explore
+        if (path[depth].hasFolders && depth < MAX_DEPTH - 1) path[depth].h.rewindDirectory();
       }
     } else {
 
       // start checking sub-directories
       while (entry && !entry.isDirectory()) {
         entry.close();
-        entry = path[depth].dir.openNextFile();
+        entry = path[depth].h.openNextFile();
       }
 
       // if we find a sub-dir, go in if we can
@@ -569,16 +576,17 @@ top:
         // getStatus needs these to be consistent
         ATOMIC_BLOCK(ATOMIC_FORCEON) {
           depth++;
-          path[depth].folder = dir_count;
-          path[depth].min = file_count;
+          path[depth].iFolder = dir_count;
+          path[depth].iFile = file_count;
         }
-        path[depth].dir = entry;
-        path[depth].max = UNKNOWN;
+        path[depth].h = entry;
+        path[depth].nFiles = MAX_FILES;
+        path[depth].hasFolders = false;
       } else {
         // if there are no sub-dirs
         if (depth > 0) {
           // pop out
-          path[depth].dir.close();
+          path[depth].h.close();
           depth--;
         } else {
           // we've searched the entire disk
