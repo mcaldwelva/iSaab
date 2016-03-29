@@ -100,6 +100,25 @@ void presenceRequest(CAN::msg &msg) {
   msg.data[0] = 0x32;
   msg.data[6] = 0x00;
   while (!ibus.send(msg));
+
+  // send rest of sequence
+  switch (action) {
+    case 0x02: // active
+      msg.data[3] = 0x36;
+      break;
+    case 0x03: // power on
+      msg.data[3] = 0x22;
+      break;
+    case 0x08: // power off
+      msg.data[3] = 0x38;
+      break;
+  }
+  msg.data[4] = 0x00;
+  msg.data[5] = 0x00;
+  while (msg.data[0] < 0x62) {
+    msg.data[0] += 0x10;
+    while (!ibus.send(msg));
+  }
 }
 
 
