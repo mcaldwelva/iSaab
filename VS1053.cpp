@@ -38,6 +38,9 @@ bool VS1053::begin() {
   // turn on sound card
   digitalWrite(VS1053_XRESET, HIGH);
 
+  // turn down analog
+  setVolume(0xfe, 0xfe);
+
   // set internal speed, SC_MULT=4.5x, SC_ADD=0.0x
   sciWrite(SCI_CLOCKF, 0xc000);
 
@@ -55,6 +58,10 @@ void VS1053::end() {
 
 // close file
 void VS1053::stopTrack() {
+  // turn down analog
+  setVolume(0xfe, 0xfe);
+
+  // done
   currentTrack.close();
 }
 
@@ -74,6 +81,9 @@ bool VS1053::startTrack() {
   uint8_t *buffer;
   uint16_t bytesRead = currentTrack.readHeader(buffer);
   sendData(buffer, bytesRead);
+
+  // turn analog up
+  setVolume(0x00, 0x00);
 
   return true;
 }
@@ -108,11 +118,9 @@ void VS1053::playTrack() {
     memset(buffer, endFillByte, VS1053_BUFFER_SIZE);
 
     // send endFillByte until cancel is accepted
-    setVolume(0xfe, 0xfe);
     while (sciRead(SCI_MODE) & SM_CANCEL) {
       sendData(buffer, VS1053_BUFFER_SIZE);
     }
-    setVolume(0x00, 0x00);
   }
 }
 
