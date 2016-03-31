@@ -27,8 +27,8 @@ class Player : private VS1053
     void setup();
     bool begin();
     void end();
-    void loop();
 
+    void play();
     void standby();
     void pause();
     void resume();

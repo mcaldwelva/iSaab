@@ -86,6 +86,7 @@ bool Player::begin() {
   return true;
 }
 
+
 // shut-down player
 void Player::end() {
 #if (DEBUGMODE==1)
@@ -115,27 +116,24 @@ void Player::end() {
   }
 }
 
+
 // main playback loop
-void Player::loop() {
+void Player::play() {
   while (state != Off) {
-    if (currentTrack) {
-      // keep the audio buffer full
-      playTrack();
-    } else {
 #if (DEBUGMODE==1)
-      Serial.println(F("loop: nothing playing"));
+    Serial.println(F("PLAY: nothing playing"));
 #endif
-      updateText();
+    updateText();
 
-      // get the next track if one hasn't already been selected
-      if (trackNext == UNKNOWN) {
-        nextTrack();
-      }
-
-      openNextTrack();
-      startTrack();
-      updateText();
+    // get the next track if one hasn't already been selected
+    if (trackNext == UNKNOWN) {
+      nextTrack();
     }
+    openNextTrack();
+
+    startTrack();
+    updateText();
+    playTrack();
   }
 }
 

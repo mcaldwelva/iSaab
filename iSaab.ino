@@ -42,7 +42,7 @@ void setup() {
 
 // main loop
 void loop() {
-  cdc.loop();
+  cdc.play();
   sleep_mode();
 }
 

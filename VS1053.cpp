@@ -7,7 +7,6 @@
 
 #include <SPI.h>
 #include <SD.h>
-#include <util/atomic.h>
 #include "VS1053.h"
 
 #define VS1053_SCI_SETTING SPISettings(1750000, MSBFIRST, SPI_MODE0)
@@ -54,13 +53,13 @@ void VS1053::end() {
 }
 
 
-// cancel playback and close file
+// close file
 void VS1053::stopTrack() {
   currentTrack.close();
 }
 
 
-// assumes currentTrack is already open
+// prepare sound card for new file
 bool VS1053::startTrack() {
   if (!currentTrack) {
     return false;
@@ -71,7 +70,7 @@ bool VS1053::startTrack() {
   sciWrite(SCI_DECODETIME, 0x00);
   sciWrite(SCI_DECODETIME, 0x00);
 
-  // read header
+  // process header
   uint8_t *buffer;
   uint16_t bytesRead = currentTrack.readHeader(buffer);
   sendData(buffer, bytesRead);
@@ -80,32 +79,40 @@ bool VS1053::startTrack() {
 }
 
 
-// transfer as much data from file as needed to fill the chip's internal buffer
+// transfer music to the sound card
 void VS1053::playTrack() {
-  // stay here as long as we need to
-  while ((state == Playing || state == Rapid) && currentTrack) {
-    uint8_t *buffer;
-    uint16_t bytesRead = currentTrack.readBlock(buffer);
-    if (bytesRead == 0) {
-      // close the file if there's no more data
-      currentTrack.close();
-    } else {
-      sendData(buffer, bytesRead);
+  // send data until the track is closed
+  while (currentTrack) {
+    if (state == Playing || state == Rapid) {
+      uint8_t *buffer;
+      uint16_t bytesRead = currentTrack.readBlock(buffer);
+      if (bytesRead == 0) {
+        // close the file if there's no more data
+        currentTrack.close();
+      } else {
+        sendData(buffer, bytesRead);
+      }
     }
   }
 
-  // get codec specific fill byte
-  sciWrite(SCI_WRAMADDR, XP_ENDFILLBYTE);
-  uint8_t endFillByte = sciRead(SCI_WRAM);
+  // always cancel playback in case of bad file
+  {
+    uint8_t buffer[VS1053_BUFFER_SIZE];
 
-  // cancel playback in case we had a bad file
-  sciWrite(SCI_MODE, SM_SDINEW | SM_CANCEL);
+    // begin cancel
+    sciWrite(SCI_MODE, SM_SDINEW | SM_CANCEL);
 
-  // send endFillByte until cancel is accepted
-  uint8_t buffer[VS1053_BUFFER_SIZE];
-  memset(buffer, endFillByte, VS1053_BUFFER_SIZE);
-  while (sciRead(SCI_MODE) & SM_CANCEL) {
-    sendData(buffer, VS1053_BUFFER_SIZE);
+    // get codec specific fill byte
+    sciWrite(SCI_WRAMADDR, XP_ENDFILLBYTE);
+    uint8_t endFillByte = sciRead(SCI_WRAM);
+    memset(buffer, endFillByte, VS1053_BUFFER_SIZE);
+
+    // send endFillByte until cancel is accepted
+    setVolume(0xfe, 0xfe);
+    while (sciRead(SCI_MODE) & SM_CANCEL) {
+      sendData(buffer, VS1053_BUFFER_SIZE);
+    }
+    setVolume(0x00, 0x00);
   }
 }
 
@@ -136,7 +143,7 @@ void VS1053::skip(int16_t secs) {
 }
 
 
-// get estimated track position in seconds
+// get approximate track position in seconds
 uint16_t VS1053::trackTime() {
   uint16_t ret = sciRead(SCI_DECODETIME);
   ret += skippedTime;
