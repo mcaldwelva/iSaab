@@ -55,6 +55,7 @@
 
 #define XP_BYTERATE          0x1e05
 #define XP_ENDFILLBYTE       0x1e06
+#define XP_BUFFERPOINTER     0x5a7d
 
 // active codec in HDAT1
 #define CODEC_UNKNOWN        0x0000

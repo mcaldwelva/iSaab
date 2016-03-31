@@ -11,7 +11,7 @@
 #include "VS1053.h"
 
 #define VS1053_SCI_SETTING SPISettings(1750000, MSBFIRST, SPI_MODE0)
-#define VS1053_SDI_SETTING SPISettings(13750000, MSBFIRST, SPI_MODE0)
+#define VS1053_SDI_SETTING SPISettings(13800000, MSBFIRST, SPI_MODE0)
 
 // setup pins
 void VS1053::setup() {
@@ -38,14 +38,9 @@ void VS1053::setup() {
 bool VS1053::begin() {
   // turn on sound card
   digitalWrite(VS1053_XRESET, HIGH);
-  delay(10);
-
-  // turn down analog
-  setVolume(0xfe, 0xfe);
 
   // set internal speed, SC_MULT=4.5x, SC_ADD=0.0x
   sciWrite(SCI_CLOCKF, 0xc000);
-  delay(2);
 
   // simple check to see if the card is responding
   return sciRead(SCI_STATUS) & 0x40;
@@ -61,24 +56,6 @@ void VS1053::end() {
 
 // cancel playback and close file
 void VS1053::stopTrack() {
-  // turn analog down
-  setVolume(0xfe, 0xfe);
-
-  // get codec specific fill byte
-  sciWrite(SCI_WRAMADDR, XP_ENDFILLBYTE);
-  uint8_t endFillByte = sciRead(SCI_WRAM);
-
-  // cancel playback in case we had a bad file
-  sciWrite(SCI_MODE, SM_SDINEW | SM_CANCEL);
-
-  // send endFillByte until cancel is accepted
-  uint8_t buffer[VS1053_BUFFER_SIZE];
-  memset(buffer, endFillByte, VS1053_BUFFER_SIZE);
-  while (sciRead(SCI_MODE) & SM_CANCEL) {
-    sendData(buffer, VS1053_BUFFER_SIZE);
-  }
-
-  // done
   currentTrack.close();
 }
 
@@ -99,9 +76,6 @@ bool VS1053::startTrack() {
   uint16_t bytesRead = currentTrack.readHeader(buffer);
   sendData(buffer, bytesRead);
 
-  // turn analog up
-  setVolume(0x00, 0x00);
-
   return true;
 }
 
@@ -109,19 +83,29 @@ bool VS1053::startTrack() {
 // transfer as much data from file as needed to fill the chip's internal buffer
 void VS1053::playTrack() {
   // stay here as long as we need to
-  while ((state == Playing || state == Rapid) && currentTrack && readyForData()) {
-    uint16_t bytesRead;
-
-    ATOMIC_BLOCK(ATOMIC_FORCEON) {
-      uint8_t *buffer;
-      bytesRead = currentTrack.readBlock(buffer);
+  while ((state == Playing || state == Rapid) && currentTrack) {
+    uint8_t *buffer;
+    uint16_t bytesRead = currentTrack.readBlock(buffer);
+    if (bytesRead == 0) {
+      // close the file if there's no more data
+      currentTrack.close();
+    } else {
       sendData(buffer, bytesRead);
     }
+  }
 
-    // close the file if there's no more data to read
-    if (bytesRead == 0) {
-      currentTrack.close();
-    }
+  // get codec specific fill byte
+  sciWrite(SCI_WRAMADDR, XP_ENDFILLBYTE);
+  uint8_t endFillByte = sciRead(SCI_WRAM);
+
+  // cancel playback in case we had a bad file
+  sciWrite(SCI_MODE, SM_SDINEW | SM_CANCEL);
+
+  // send endFillByte until cancel is accepted
+  uint8_t buffer[VS1053_BUFFER_SIZE];
+  memset(buffer, endFillByte, VS1053_BUFFER_SIZE);
+  while (sciRead(SCI_MODE) & SM_CANCEL) {
+    sendData(buffer, VS1053_BUFFER_SIZE);
   }
 }
 
@@ -207,22 +191,29 @@ bool VS1053::loadPlugin(const __FlashStringHelper* fileName) {
 
 // send data to the sound card
 void VS1053::sendData(uint8_t data[], uint16_t len) {
-#ifdef SPI_HAS_TRANSACTION
-  SPI.beginTransaction(VS1053_SDI_SETTING);
-#endif
-  fastDigitalWrite(VS1053_XDCS, LOW);
+  uint16_t siz;
 
-  for (uint16_t i = 0; i < len; i++) {
-    // when DREQ is high, it's safe to send 32 bytes
-    if (!(i & 31)) while (!readyForData());
-    spiwrite(data[i]);
+  while (len > 0) {
+    siz = len > 32 ? 32 : len;
+    while (!readyForData());
+
+#ifdef SPI_HAS_TRANSACTION
+    SPI.beginTransaction(VS1053_SDI_SETTING);
+#endif
+    fastDigitalWrite(VS1053_XDCS, LOW);
+
+    for (uint8_t i = 0; i < siz; i++) {
+      spiwrite(*data++);
+    }
+    len -= siz;
+
+    fastDigitalWrite(VS1053_XDCS, HIGH);
+#ifdef SPI_HAS_TRANSACTION
+    SPI.endTransaction();
+#endif
   }
-
-  fastDigitalWrite(VS1053_XDCS, HIGH);
-#ifdef SPI_HAS_TRANSACTION
-  SPI.endTransaction();
-#endif
 }
+
 
 inline __attribute__((always_inline))
 void VS1053::setVolume(uint8_t left, uint8_t right) {
@@ -238,6 +229,7 @@ void VS1053::setVolume(uint8_t left, uint8_t right) {
 uint16_t VS1053::sciRead(uint8_t addr) {
   uint16_t data;
 
+  while (!readyForData());
 #ifdef SPI_HAS_TRANSACTION
   SPI.beginTransaction(VS1053_SCI_SETTING);
 #endif
@@ -245,7 +237,6 @@ uint16_t VS1053::sciRead(uint8_t addr) {
 
   spiwrite(VS_READ_COMMAND);
   spiwrite(addr);
-  delayMicroseconds(10);
   data = spiread();
   data <<= 8;
   data |= spiread();
@@ -260,6 +251,7 @@ uint16_t VS1053::sciRead(uint8_t addr) {
 
 
 void VS1053::sciWrite(uint8_t addr, uint16_t data) {
+while (!readyForData());
 #ifdef SPI_HAS_TRANSACTION
   SPI.beginTransaction(VS1053_SCI_SETTING);
 #endif
@@ -284,14 +276,12 @@ bool VS1053::readyForData() {
 }
 
 inline __attribute__((always_inline))
-uint8_t VS1053::spiread()
-{
+uint8_t VS1053::spiread() {
   return SPI.transfer(0x00);
 }
 
 inline __attribute__((always_inline))
-void VS1053::spiwrite(uint8_t c)
-{
+void VS1053::spiwrite(uint8_t c) {
   SPI.transfer(c);
 }
 
