@@ -98,7 +98,6 @@ void Player::end() {
 
     // close any open file
     stopTrack();
-    updateText();
     
     // collapse path structure
     while (depth > 0) {
@@ -123,8 +122,6 @@ void Player::play() {
 #if (DEBUGMODE==1)
     Serial.println(F("PLAY: nothing playing"));
 #endif
-    updateText();
-
     // get the next track if one hasn't already been selected
     if (trackNext == UNKNOWN) {
       nextTrack();
@@ -133,7 +130,9 @@ void Player::play() {
 
     startTrack();
     updateText();
+
     playTrack();
+    updateText();
   }
 }
 
