@@ -28,7 +28,6 @@ class CAN {
 
     enum Mode : uint8_t { Normal = 0x00, Sleep = 0x20, Loopback = 0x40, ListenOnly = 0x60, Config = 0x80 };
     void setMode(Mode mode);
-    void setLowPriorityInterrupts(bool enabled);
 
   private:
     void setFilters(const uint16_t high[] PROGMEM, const uint16_t low[] PROGMEM);

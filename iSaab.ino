@@ -42,8 +42,11 @@ void setup() {
 
 // main loop
 void loop() {
-  cdc.play();
+  ibus.setMode(CAN::Sleep);
   sleep_mode();
+  ibus.setMode(CAN::Normal);
+
+  cdc.play();
 }
 
 
@@ -88,13 +91,11 @@ void presenceRequest(CAN::msg &msg) {
       break;
     case 0x03: // power on
       msg.data[3] = 0x03;
-      ibus.setLowPriorityInterrupts(true);
       cdc.begin();
       break;
     case 0x08: // power off
       msg.data[3] = 0x19;
       cdc.end();
-      ibus.setLowPriorityInterrupts(false);
       break;
   }
   msg.data[0] = 0x32;

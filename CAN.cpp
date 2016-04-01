@@ -240,10 +240,10 @@ void CAN::setMode(Mode mode) {
   // enable/disable Wake-on-CAN
   switch (mode) {
     case Sleep:
-      modifyRegister(CANINTE, _BV(WAKIE), 0xff);
-      break;
+      modifyRegister(CANINTE, _BV(WAKIE) | _BV(RX1IE), _BV(WAKIE));
+      return; // todo
     case Normal:
-      modifyRegister(CANINTE, _BV(WAKIE), 0x00);
+      modifyRegister(CANINTE, _BV(WAKIE) | _BV(RX1IE), _BV(RX1IE));
       modifyRegister(CANINTF, _BV(WAKIF), 0x00);
       break;
   }
@@ -318,12 +318,6 @@ void CAN::setFilters(const uint16_t high[] PROGMEM, const uint16_t low[] PROGMEM
     flags = _BV(RXM1) | _BV(RXM0);
   }
   modifyRegister(RXB1CTRL, _BV(RXM1) | _BV(RXM0), flags);
-}
-
-
-// enable/disable interrupts for low priority messages
-void CAN::setLowPriorityInterrupts(bool enabled) {
-  modifyRegister(CANINTE, _BV(RX1IE), enabled ? 0xff : 0x00);
 }
 
 
