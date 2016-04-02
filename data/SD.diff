@@ -1,4 +1,4 @@
-diff -ru ./SD/src/SD.cpp /cygdrive/c/Users/mcaldwel/Documents/Arduino/libraries/SD/src/SD.cpp
+diff -ru ./SD/src/SD.cpp ~/SD/src/SD.cpp
 --- ./SD/src/SD.cpp	2016-03-09 10:11:12.000000000 -0500
 +++ ~/SD/src/SD.cpp	2016-04-01 22:07:43.049546200 -0400
 @@ -342,7 +342,8 @@
@@ -11,7 +11,7 @@ diff -ru ./SD/src/SD.cpp /cygdrive/c/Users/mcaldwel/Documents/Arduino/libraries/
           volume.init(card) &&
           root.openRoot(volume);
  }
-diff -ru ./SD/src/utility/SdFile.cpp /cygdrive/c/Users/mcaldwel/Documents/Arduino/libraries/SD/src/utility/SdFile.cpp
+diff -ru ./SD/src/utility/SdFile.cpp ~/SD/src/utility/SdFile.cpp
 --- ./SD/src/utility/SdFile.cpp	2016-03-09 10:11:12.000000000 -0500
 +++ ~/SD/src/utility/SdFile.cpp	2016-03-09 19:09:00.570848200 -0500
 @@ -268,7 +268,7 @@
