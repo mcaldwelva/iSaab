@@ -1,0 +1,25 @@
+diff -ru ./SD/src/SD.cpp /cygdrive/c/Users/mcaldwel/Documents/Arduino/libraries/SD/src/SD.cpp
+--- ./SD/src/SD.cpp	2016-03-09 10:11:12.000000000 -0500
++++ ~/SD/src/SD.cpp	2016-04-01 22:07:43.049546200 -0400
+@@ -342,7 +342,8 @@
+     Return true if initialization succeeds, false otherwise.
+ 
+    */
+-  return card.init(SPI_HALF_SPEED, csPin) &&
++  if (root.isOpen()) root.close();
++  return card.init(SPI_FULL_SPEED, csPin) &&
+          volume.init(card) &&
+          root.openRoot(volume);
+ }
+diff -ru ./SD/src/utility/SdFile.cpp /cygdrive/c/Users/mcaldwel/Documents/Arduino/libraries/SD/src/utility/SdFile.cpp
+--- ./SD/src/utility/SdFile.cpp	2016-03-09 10:11:12.000000000 -0500
++++ ~/SD/src/utility/SdFile.cpp	2016-03-09 19:09:00.570848200 -0500
+@@ -268,7 +268,7 @@
+       while ((b = *p++)) if (b == c) return false;
+ #endif
+       // check size and only allow ASCII printable characters
+-      if (i > n || c < 0X21 || c > 0X7E)return false;
++      if (i > n || c < 0x20 || c == 0x7F) return false;
+       // only upper case allowed in 8.3 names - convert lower to upper
+       name[i++] = c < 'a' || c > 'z' ?  c : c + ('A' - 'a');
+     }
