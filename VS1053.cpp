@@ -211,7 +211,6 @@ void VS1053::sendData(uint8_t data[], uint16_t len) {
   while (len > 0) {
     siz = len > 32 ? 32 : len;
     while (!readyForData());
-
 #ifdef SPI_HAS_TRANSACTION
     SPI.beginTransaction(VS1053_SDI_SETTING);
 #endif
@@ -220,12 +219,12 @@ void VS1053::sendData(uint8_t data[], uint16_t len) {
     for (uint8_t i = 0; i < siz; i++) {
       spiwrite(*data++);
     }
-    len -= siz;
 
     fastDigitalWrite(VS1053_XDCS, HIGH);
 #ifdef SPI_HAS_TRANSACTION
     SPI.endTransaction();
 #endif
+    len -= siz;
   }
 }
 

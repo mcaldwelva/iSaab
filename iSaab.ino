@@ -54,11 +54,8 @@ void loop() {
 void processMessage() {
   CAN::msg msg;
 
-  // if there's a message waiting
-  while (ibus.available()) {
-    // get it
-    ibus.receive(msg);
-
+  // if there's a message available
+  if (ibus.receive(msg)) {
     // act on it
     switch (msg.id) {
       case RX_CDC_CONTROL:
