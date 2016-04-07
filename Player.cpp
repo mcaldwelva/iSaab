@@ -10,8 +10,8 @@
 #include "Player.h"
 
 // guarantees progress through the entire library
-// and next track selected in < 2 seconds
-#define RANDOM_TRACK (trackNum + 1 + random(509))
+// and next track selected in a few seconds
+#define RANDOM_TRACK (random(path[depth].nFiles + 509) + path[depth].iFile)
 
 Player::Player() {
   // initial player state
@@ -185,7 +185,7 @@ void Player::nextTrack() {
 #endif
 
   if (shuffled) {
-    trackNext = RANDOM_TRACK;
+    do { trackNext = RANDOM_TRACK; } while (trackNext == trackNum);
   } else {
     // if no track is queued up
     if (trackNext == UNKNOWN) {
@@ -210,7 +210,7 @@ void Player::prevTrack() {
     trackNext = trackNum;
   } else {
     if (shuffled) {
-      trackNext = RANDOM_TRACK;
+      do { trackNext = RANDOM_TRACK; } while (trackNext == trackNum);
     } else {
       // if no track is queued up
       if (trackNext == UNKNOWN) {
@@ -432,7 +432,7 @@ void Player::updateText() {
     text = currentTrack.getTag(abs(display.tag) - 1);
   }
 
-  ATOMIC_BLOCK(ATOMIC_FORCEON) {
+  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
     for (i = 0, j = 0; i < 12; i++, j++) {
       display.text[i] = text[j];
     }
