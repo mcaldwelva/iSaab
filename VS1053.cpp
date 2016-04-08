@@ -72,6 +72,23 @@ bool VS1053::startTrack() {
     return false;
   }
 
+  // ensure good state
+  {
+    // cancel playback
+    sciWrite(SCI_MODE, SM_SDINEW | SM_CANCEL);
+
+    // get codec specific fill byte
+    sciWrite(SCI_WRAMADDR, XP_ENDFILLBYTE);
+    uint8_t endFillByte = sciRead(SCI_WRAM);
+
+    // send endFillByte until cancel is accepted
+    uint8_t buffer[VS1053_BUFFER_SIZE];
+    memset(buffer, endFillByte, VS1053_BUFFER_SIZE);
+    while (sciRead(SCI_MODE) & SM_CANCEL) {
+      sendData(buffer, VS1053_BUFFER_SIZE);
+    }
+  }
+
   // reset decode time
   skippedTime = 0;
   sciWrite(SCI_DECODETIME, 0x00);
@@ -102,24 +119,6 @@ void VS1053::playTrack() {
       } else {
         sendData(buffer, bytesRead);
       }
-    }
-  }
-
-  // always cancel playback in case of bad file
-  {
-    uint8_t buffer[VS1053_BUFFER_SIZE];
-
-    // begin cancel
-    sciWrite(SCI_MODE, SM_SDINEW | SM_CANCEL);
-
-    // get codec specific fill byte
-    sciWrite(SCI_WRAMADDR, XP_ENDFILLBYTE);
-    uint8_t endFillByte = sciRead(SCI_WRAM);
-    memset(buffer, endFillByte, VS1053_BUFFER_SIZE);
-
-    // send endFillByte until cancel is accepted
-    while (sciRead(SCI_MODE) & SM_CANCEL) {
-      sendData(buffer, VS1053_BUFFER_SIZE);
     }
   }
 }
