@@ -62,13 +62,13 @@ void VS1053::stopTrack() {
   setVolume(0xfe, 0xfe);
 
   // done
-  currentTrack.close();
+  audio.close();
 }
 
 
 // prepare sound card for new file
 bool VS1053::startTrack() {
-  if (!currentTrack) {
+  if (!audio) {
     return false;
   }
 
@@ -96,7 +96,7 @@ bool VS1053::startTrack() {
 
   // process header
   uint8_t *buffer;
-  uint16_t bytesRead = currentTrack.readHeader(buffer);
+  uint16_t bytesRead = audio.readHeader(buffer);
   sendData(buffer, bytesRead);
 
   // turn analog up
@@ -109,13 +109,13 @@ bool VS1053::startTrack() {
 // transfer music to the sound card
 void VS1053::playTrack() {
   // send data until the track is closed
-  while (currentTrack) {
+  while (audio) {
     if (state == Playing || state == Rapid) {
       uint8_t *buffer;
-      uint16_t bytesRead = currentTrack.readBlock(buffer);
+      uint16_t bytesRead = audio.readBlock(buffer);
       if (bytesRead == 0) {
         // close the file if there's no more data
-        currentTrack.close();
+        audio.close();
       } else {
         sendData(buffer, bytesRead);
       }
@@ -136,15 +136,15 @@ void VS1053::skip(int16_t secs) {
   long rate = sciRead(SCI_WRAM);
 
   // adjust rate based on codec
-  if (currentTrack.isFlac()) {
+  if (audio.isFlac()) {
     rate <<= 2;
   } else {
     rate &= ~3;
   }
 
   // update position
-  long pos = currentTrack.position() + rate * secs;
-  if (currentTrack.seek(pos)) {
+  long pos = audio.position() + rate * secs;
+  if (audio.seek(pos)) {
     skippedTime += secs;
   }
 }

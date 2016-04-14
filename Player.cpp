@@ -11,7 +11,7 @@
 
 // guarantees progress through the entire library
 // and next track selected in a few seconds
-#define RANDOM_TRACK (random(path[depth].nFiles + 509) + path[depth].iFile)
+#define RANDOM_TRACK (random(path[depth].tracks + 509) + path[depth].base)
 
 Player::Player() {
   // initial player state
@@ -21,13 +21,13 @@ Player::Player() {
   display.tag = 0;
 
   // select the first track
-  trackNum = 0;
-  trackNext = 0;
+  current = 0;
+  next = 0;
 
   // no music files in the root
-  path[0].iFolder = 0;
-  path[0].iFile = 0;
-  path[0].nFiles = 0;
+  path[0].folder = 0;
+  path[0].base = 0;
+  path[0].tracks = 0;
   path[0].hasFolders = true;
 }
 
@@ -53,13 +53,13 @@ void Player::setup() {
 
 // start-up player
 bool Player::begin() {
-#if (DEBUGMODE==1)
+#if (DEBUGMODE>=1)
   Serial.println(F("BEGIN"));
 #endif
   if (state == Off) {
     // turn on sound card
     if (!VS1053::begin()) {
-#if (DEBUGMODE==1)
+#if (DEBUGMODE>=1)
       Serial.println(F("Failed to initialize vs1053!"));
 #endif
       return false;
@@ -89,20 +89,19 @@ bool Player::begin() {
 
 // shut-down player
 void Player::end() {
-#if (DEBUGMODE==1)
+#if (DEBUGMODE>=1)
   Serial.println(F("END"));
 #endif
   if (state != Off) {
     // resume current track on start-up
-    trackNext = trackNum;
+    next = current;
 
     // close any open file
     stopTrack();
     
     // collapse path structure
     while (depth > 0) {
-      path[depth].h.close();
-      depth--;
+      path[depth--].h.close();
     }
 
     // close root
@@ -119,11 +118,11 @@ void Player::end() {
 // main playback loop
 void Player::play() {
   while (state != Off) {
-#if (DEBUGMODE==1)
+#if (DEBUGMODE>=1)
     Serial.println(F("PLAY: nothing playing"));
 #endif
     // get the next track if one hasn't already been selected
-    if (trackNext == UNKNOWN) {
+    if (next == UNKNOWN) {
       nextTrack();
     }
     openNextTrack();
@@ -138,7 +137,7 @@ void Player::play() {
 
 
 void Player::standby() {
-#if (DEBUGMODE==1)
+#if (DEBUGMODE>=1)
   Serial.println(F("STANDBY"));
 #endif
   if (state != Off) {
@@ -149,7 +148,7 @@ void Player::standby() {
 
 
 void Player::pause() {
-#if (DEBUGMODE==1)
+#if (DEBUGMODE>=1)
   Serial.println(F("PAUSE"));
 #endif
   if (state == Playing) {
@@ -160,7 +159,7 @@ void Player::pause() {
 
 
 void Player::resume() {
-#if (DEBUGMODE==1)
+#if (DEBUGMODE>=1)
   Serial.println(F("RESUME"));
 #endif
   if (state != Off) {
@@ -172,7 +171,7 @@ void Player::resume() {
 
 void Player::shuffle() {
   shuffled = !shuffled;
-#if (DEBUGMODE==1)
+#if (DEBUGMODE>=1)
   Serial.print(F("SHUFFLE "));
   Serial.println(shuffled ? F("ON") : F("OFF"));
 #endif
@@ -180,19 +179,19 @@ void Player::shuffle() {
 
 
 void Player::nextTrack() {
-#if (DEBUGMODE==1)
+#if (DEBUGMODE>=1)
   Serial.println(F("NEXT"));
 #endif
 
   if (shuffled) {
-    do { trackNext = RANDOM_TRACK; } while (trackNext == trackNum);
+    do { next = RANDOM_TRACK; } while (next == current);
   } else {
     // if no track is queued up
-    if (trackNext == UNKNOWN) {
-      trackNext = trackNum + 1;
+    if (next == UNKNOWN) {
+      next = current + 1;
     } else {
       // keep skipping
-      trackNext++;
+      next++;
     }
   }
 
@@ -201,23 +200,23 @@ void Player::nextTrack() {
 
 
 void Player::prevTrack() {
-#if (DEBUGMODE==1)
+#if (DEBUGMODE>=1)
   Serial.println(F("PREVIOUS"));
 #endif
 
   if (trackTime()) {
     // start this track over again
-    trackNext = trackNum;
+    next = current;
   } else {
     if (shuffled) {
-      do { trackNext = RANDOM_TRACK; } while (trackNext == trackNum);
+      do { next = RANDOM_TRACK; } while (next == current);
     } else {
       // if no track is queued up
-      if (trackNext == UNKNOWN) {
-        trackNext = trackNum - 1;
+      if (next == UNKNOWN) {
+        next = current - 1;
       } else {
         // keep skipping
-        trackNext--;
+        next--;
       }
     }
   }
@@ -227,7 +226,7 @@ void Player::prevTrack() {
 
 
 void Player::nextDisc() {
-#if (DEBUGMODE==1)
+#if (DEBUGMODE>=1)
   Serial.println(F("NEXT DISC"));
 #endif
 
@@ -235,7 +234,7 @@ void Player::nextDisc() {
     display.tag = (abs(display.tag) + 1) % (AudioFile::MAX_TAG_ID + 1);
     updateText();
   } else {
-    trackNext = (path[depth].iFile + path[depth].nFiles);
+    next = (path[depth].base + path[depth].tracks);
     stopTrack();
   }
 }
@@ -244,7 +243,7 @@ void Player::nextDisc() {
 // read presets from file
 void Player::readPresets(const __FlashStringHelper* fileName) {
   // clear existing presets
-  memset(presets, 0, sizeof(trackNum) * NUM_PRESETS);
+  memset(presets, 0, sizeof(current) * NUM_PRESETS);
 
   // open the file
   File file = SD.open(fileName);
@@ -267,7 +266,7 @@ void Player::readPresets(const __FlashStringHelper* fileName) {
 
 
 void Player::preset(uint8_t memory) {
-#if (DEBUGMODE==1)
+#if (DEBUGMODE>=1)
   Serial.print(F("PRESET: "));
   Serial.println(memory, DEC);
 #endif
@@ -280,14 +279,14 @@ void Player::preset(uint8_t memory) {
     }
     updateText();
   } else {
-    trackNext = presets[memory - 1];
+    next = presets[memory - 1];
     stopTrack();
   }
 }
 
 
 void Player::rewind() {
-#if (DEBUGMODE==1)
+#if (DEBUGMODE>=1)
   Serial.println(F("REWIND"));
 #endif
   rapidCount++;
@@ -307,7 +306,7 @@ void Player::rewind() {
 
 
 void Player::forward() {
-#if (DEBUGMODE==1)
+#if (DEBUGMODE>=1)
   Serial.println(F("FAST FORWARD"));
 #endif
   rapidCount++;
@@ -327,7 +326,7 @@ void Player::forward() {
 
 
 void Player::normal() {
-#if (DEBUGMODE==1)
+#if (DEBUGMODE>=2)
   Serial.println(F("NORMAL"));
 #endif
   if (state == Rapid) {
@@ -345,29 +344,29 @@ void Player::getStatus(uint8_t data[]) {
   uint8_t disc;
 
   // gather track information
-  if (trackNext == UNKNOWN) {
+  if (next == UNKNOWN) {
     // playing current track
     time = trackTime();
-    track = trackNum - path[depth].iFile + 1;
-    disc = path[depth].iFolder;
+    track = current - path[depth].base + 1;
+    disc = path[depth].folder;
   }
-  else if (trackNext >= (path[depth].iFile + path[depth].nFiles)) {
+  else if (next >= (path[depth].base + path[depth].tracks)) {
     // new track is on the next disc
     time = 0;
-    track = trackNext - (path[depth].iFile + path[depth].nFiles) + 1;
-    disc = path[depth].iFolder + 1;
+    track = next - (path[depth].base + path[depth].tracks) + 1;
+    disc = path[depth].folder + 1;
   }
-  else if (trackNext < path[depth].iFile) {
+  else if (next < path[depth].base) {
     // new track is on the previous disc
     time = 0;
-    track = 100 - (trackNum - trackNext);
-    disc = path[depth].iFolder - 1;
+    track = 100 - (current - next);
+    disc = path[depth].folder - 1;
   }
   else {
     // new track is on the current disc
     time = 0;
-    track = trackNext - path[depth].iFile + 1;
-    disc = path[depth].iFolder;
+    track = next - path[depth].base + 1;
+    disc = path[depth].folder;
   }
 
   // married, random
@@ -429,7 +428,7 @@ void Player::updateText() {
   String text;
 
   if (state == Playing) {
-    text = currentTrack.getTag(abs(display.tag) - 1);
+    text = audio.getTag(abs(display.tag) - 1);
   }
 
   ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
@@ -453,80 +452,85 @@ void Player::dumpPath() {
     Serial.print(":");
     Serial.print(path[i].h.name());
     Serial.print(F(", index:"));
-    Serial.print(path[i].iFile);
+    Serial.print(path[i].base);
     Serial.print(F(", files:"));
-    Serial.print(path[i].nFiles);
+    Serial.print(path[i].tracks);
     Serial.println();
   }
 
-  Serial.println(currentTrack.name());
+  Serial.println(audio.name());
 }
 
 
 // find the new track number on the file system
 void Player::openNextTrack() {
   File entry;
-  uint16_t file_count;
-  uint16_t dir_count;
+  uint16_t file;
+  uint16_t folder;
 
-#if (DEBUGMODE==1)
-  Serial.print(F("DISCOVER: "));
-  Serial.println(trackNext, DEC);
+#if (DEBUGMODE>=1)
+  Serial.print(F("OPENNEXTTRACK: "));
+  Serial.println(next, DEC);
 #endif
 
   // collapse current path as necessary
-  while (path[depth].iFile > trackNext) {
-    path[depth].h.close();
-    depth--;
+  while (path[depth].base > next) {
+    path[depth--].h.close();
   }
 
 top:
-  dir_count = path[depth].iFolder;
+  folder = path[depth].folder;
 
   // determine where to start in the current directory
-  if (trackNext > trackNum) {
+  if (next > current) {
     // start with the current file
-    file_count = trackNum + 1;
+    file = current + 1;
 
     // was this the last file in the directory?
-    if (file_count == (path[depth].iFile + path[depth].nFiles)) {
+    if (file == (path[depth].base + path[depth].tracks)) {
       // count this folder if it contained files
-      dir_count++;
+      folder++;
 
       // rewind if it contained folders we can explore
       if (path[depth].hasFolders && depth < MAX_DEPTH - 1) path[depth].h.rewindDirectory();
     }
   } else {
     // start at the top of the directory
-    file_count = path[depth].iFile;
+    file = path[depth].base;
     path[depth].h.rewindDirectory();
   }
 
-#if (DEBUGMODE==1)
+#if (DEBUGMODE>=1)
   Serial.print(F("Starting at:"));
-  Serial.println(file_count, DEC);
+  Serial.println(file, DEC);
 #endif
 
   // search from here until we find our file
-  while (file_count <= trackNext) {
-    // is the filesystem still available?
-    if (state == Off) return;
-
+  while (state != Off) {
     // explore this directory if we haven't already or we've already 
     // explored this directory and we know the file is in here
     entry = path[depth].h.openNextFile();
-    if (file_count < (path[depth].iFile + path[depth].nFiles)) {
+    if (file < (path[depth].base + path[depth].tracks)) {
       while (entry) {
         if (!entry.isDirectory()) {
-#if (DEBUGMODE==2)
-          Serial.print(file_count);
+#if (DEBUGMODE>=2)
+          Serial.print(file);
           Serial.print(' ');
           Serial.println(entry.name());
 #endif
 
-          if (file_count++ == trackNext && path[depth].nFiles != MAX_FILES) {
+          if (file++ == next && path[depth].tracks != MAX_FILES) {
             // this is the file we're looking for
-            goto done;
+            ATOMIC_BLOCK(ATOMIC_FORCEON) {
+              audio = entry;
+              current = next;
+              next = UNKNOWN;
+            }
+
+#if (DEBUGMODE>=1)
+            dumpPath();
+#endif
+            return;
           } else {
             // skip this file
             entry.close();
@@ -540,16 +544,16 @@ top:
       }
 
       // we know how many files are in this dir now
-      path[depth].nFiles = file_count - path[depth].iFile;
+      path[depth].tracks = file - path[depth].base;
 
       // if we've discovered the new track
-      if (file_count > trackNext) { 
+      if (file > next) { 
         // start from the top of the directory
-        file_count = path[depth].iFile;
+        file = path[depth].base;
         path[depth].h.rewindDirectory();
       } else {
         // count this folder if it contained files
-        if (path[depth].nFiles) dir_count++;
+        if (path[depth].tracks) folder++;
 
         // rewind if it contained folders we can explore
         if (path[depth].hasFolders && depth < MAX_DEPTH - 1) path[depth].h.rewindDirectory();
@@ -564,8 +568,8 @@ top:
 
       // if we find a sub-dir, go in if we can
       if (entry && depth < MAX_DEPTH - 1) {
-#if (DEBUGMODE==1)
-        Serial.print(dir_count);
+#if (DEBUGMODE>=1)
+        Serial.print(folder);
         Serial.print(' ');
         Serial.println(entry.name());
 #endif
@@ -573,44 +577,29 @@ top:
         // getStatus needs these to be consistent
         ATOMIC_BLOCK(ATOMIC_FORCEON) {
           depth++;
-          path[depth].iFolder = dir_count;
-          path[depth].iFile = file_count;
+          path[depth].folder = folder;
+          path[depth].base = file;
         }
         path[depth].h = entry;
-        path[depth].nFiles = MAX_FILES;
+        path[depth].tracks = MAX_FILES;
         path[depth].hasFolders = false;
       } else {
         // if there are no sub-dirs
         if (depth > 0) {
           // pop out
-          path[depth].h.close();
-          depth--;
+          path[depth--].h.close();
         } else {
-          // we've searched the entire disk
-#if (DEBUGMODE==1)
-          Serial.print(dir_count, DEC);
-          Serial.println(F(" dirs"));
-          Serial.print(file_count, DEC);
+          // go back to the beginning
+          next %= file;
+#if (DEBUGMODE>=1)
+          Serial.print(folder, DEC);
+          Serial.println(F(" folders"));
+          Serial.print(file, DEC);
           Serial.println(F(" files"));
 #endif
-
-          // go back to the beginning
-          trackNext %= file_count;
           goto top;
         }
       }
     }
-  }
-
-done:
-  currentTrack = entry;
-#if (DEBUGMODE==1)
-  dumpPath();
-#endif
-
-  // getStatus needs these to be consistent
-  ATOMIC_BLOCK(ATOMIC_FORCEON) {
-    trackNum = trackNext;
-    trackNext = UNKNOWN;
   }
 }

@@ -48,8 +48,8 @@ class Player : private VS1053
     void openNextTrack();
     void readPresets(const __FlashStringHelper* fileName);
 
-    uint16_t trackNum;
-    volatile uint16_t trackNext;
+    uint16_t current;
+    volatile uint16_t next;
     volatile bool shuffled;
     uint16_t presets[NUM_PRESETS];
     uint8_t rapidCount;
@@ -65,9 +65,9 @@ class Player : private VS1053
     void dumpPath();
     struct {
       File h;
-      uint16_t iFile;
-      uint16_t iFolder;
-      uint16_t nFiles : 12;
+      uint16_t base;
+      uint16_t folder;
+      uint16_t tracks : 12;
       bool hasFolders : 1;
     } path[MAX_DEPTH];
     int8_t depth;

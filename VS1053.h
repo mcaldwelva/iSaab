@@ -91,7 +91,7 @@ class VS1053 {
 
     enum State : uint8_t { Off = 0x00, Standby = 0x30, Playing = 0x40, Paused = 0x50, Rapid = 0x60 };
     volatile State state;
-    AudioFile currentTrack;
+    AudioFile audio;
 
   private:
     bool readyForData();
