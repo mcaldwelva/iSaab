@@ -16,15 +16,14 @@
 Player::Player() {
   // initial player state
   state = Off;
-  depth = 0;
   rapidCount = 0;
   display.tag = 0;
 
   // select the first track
-  current = 0;
   next = 0;
 
   // no music files in the root
+  depth = -1;
   path[0].folder = 0;
   path[0].base = 0;
   path[0].tracks = 0;
@@ -72,7 +71,7 @@ bool Player::begin() {
     }
 
     // open SD root
-    path[0].h = SD.open(F("/"));
+    path[++depth].h = SD.open(F("/"));
 
     // load FLAC patch
     loadPlugin(F("PATCH053.BIN"));
@@ -80,6 +79,7 @@ bool Player::begin() {
     // read presets
     readPresets(F("PRESETS.TXT"));
 
+    current = 0;
     state = Playing;
   }
 
@@ -94,18 +94,17 @@ void Player::end() {
 #endif
   if (state != Off) {
     // resume current track on start-up
-    next = current;
+    if (next == UNKNOWN) {
+      next = current;
+    }
 
     // close any open file
     stopTrack();
-    
+
     // collapse path structure
-    while (depth > 0) {
+    while (depth >= 0) {
       path[depth--].h.close();
     }
-
-    // close root
-    path[0].h.close();
 
     // turn off sound card
     VS1053::end();
