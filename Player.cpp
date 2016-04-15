@@ -20,6 +20,7 @@ Player::Player() {
   display.tag = 0;
 
   // select the first track
+  current = 0;
   next = 0;
 
   // no music files in the root
@@ -79,7 +80,6 @@ bool Player::begin() {
     // read presets
     readPresets(F("PRESETS.TXT"));
 
-    current = 0;
     state = Playing;
   }
 
