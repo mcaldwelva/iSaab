@@ -267,7 +267,7 @@ int AudioFile::readHeader(uint8_t *&buf) {
 int AudioFile::readBlock(uint8_t *&buf) {
   uint32_t pos = position();
   uint16_t rem = pos % 512;
-  uint16_t siz = flac ? 512 - rem : 32 - (rem % 32);
+  uint16_t siz = 512 - rem;
 
   // ensure the block we need is in cache
   read();

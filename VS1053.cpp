@@ -136,11 +136,10 @@ void VS1053::skip(int16_t secs) {
   long rate = sciRead(SCI_WRAM);
 
   // adjust rate based on codec
-  if (audio.isFlac()) {
-    rate <<= 2;
-  } else {
-    rate &= ~3;
+  if (!audio.isFlac()) {
+    rate >>= 2;
   }
+  rate <<= 2;
 
   // update position
   long pos = audio.position() + rate * secs;
