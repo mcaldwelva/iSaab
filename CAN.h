@@ -26,7 +26,7 @@ class CAN {
     bool receive(msg &message);
     bool available() { return (!fastDigitalRead(MCP2515_IRQ)); };
 
-    enum Mode : uint8_t { Normal = 0x00, Sleep = 0x20, Loopback = 0x40, ListenOnly = 0x60, Config = 0x80 };
+    enum Mode : uint8_t { Normal = 0x00, McuSleep = 0x10, Sleep = 0x20, Loopback = 0x40, ListenOnly = 0x60, Config = 0x80 };
     void setMode(Mode mode);
 
   private:

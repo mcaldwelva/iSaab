@@ -239,9 +239,12 @@ bool CAN::receive(msg &message) {
 void CAN::setMode(Mode mode) {
   // enable/disable Wake-on-CAN
   switch (mode) {
+    case McuSleep:
+      modifyRegister(CANINTE, _BV(RX1IE), 0x00);
+      return;
     case Sleep:
-      modifyRegister(CANINTE, _BV(WAKIE) | _BV(RX1IE), _BV(WAKIE));
-      return; // todo
+      modifyRegister(CANINTE, _BV(WAKIE), 0xff);
+      break;
     case Normal:
       modifyRegister(CANINTE, _BV(WAKIE) | _BV(RX1IE), _BV(RX1IE));
       modifyRegister(CANINTF, _BV(WAKIF), 0x00);

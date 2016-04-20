@@ -42,7 +42,7 @@ void setup() {
 
 // main loop
 void loop() {
-  ibus.setMode(CAN::Sleep);
+  ibus.setMode(CAN::McuSleep);
   sleep_mode();
   ibus.setMode(CAN::Normal);
 
