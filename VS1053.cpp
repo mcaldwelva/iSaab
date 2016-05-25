@@ -17,6 +17,7 @@ void VS1053::setup() {
   // turn off sound card
   pinMode(VS1053_XRESET, OUTPUT);
   digitalWrite(VS1053_XRESET, LOW);
+  state = Off;
 
   // configure control pin
   pinMode(VS1053_XCS, OUTPUT);
@@ -36,6 +37,7 @@ void VS1053::setup() {
 // power on
 bool VS1053::begin() {
   // turn on sound card
+  state = Standby;
   digitalWrite(VS1053_XRESET, HIGH);
 
   // turn down analog
@@ -53,6 +55,7 @@ bool VS1053::begin() {
 void VS1053::end() {
   // turn off sound card
   digitalWrite(VS1053_XRESET, LOW);
+  state = Off;
 }
 
 
@@ -282,7 +285,7 @@ void VS1053::sciWrite(uint8_t addr, uint16_t data) {
 // check if sound card can take data
 inline __attribute__((always_inline))
 bool VS1053::readyForData() {
-  return fastDigitalRead(VS1053_XDREQ);
+  return fastDigitalRead(VS1053_XDREQ) || (state == Off);
 }
 
 inline __attribute__((always_inline))

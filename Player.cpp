@@ -15,7 +15,6 @@
 
 Player::Player() {
   // initial player state
-  state = Off;
   rapidCount = 0;
   display.tag = 0;
 
@@ -108,8 +107,6 @@ void Player::end() {
 
     // turn off sound card
     VS1053::end();
-
-    state = Off;
   }
 }
 
@@ -120,12 +117,12 @@ void Player::play() {
 #if (DEBUGMODE>=1)
     Serial.println(F("PLAY: nothing playing"));
 #endif
+
     // get the next track if one hasn't already been selected
     if (next == UNKNOWN) {
       nextTrack();
     }
     openNextTrack();
-
     startTrack();
     updateText();
 
@@ -463,9 +460,10 @@ void Player::dumpPath() {
 
 // find the new track number on the file system
 void Player::openNextTrack() {
-  File entry;
+  uint16_t next = this->next;
   uint16_t file;
   uint16_t folder;
+  File entry;
 
 #if (DEBUGMODE>=1)
   Serial.print(F("OPENNEXTTRACK: "));
@@ -521,10 +519,10 @@ top:
           if (file++ == next && path[depth].tracks != MAX_FILES) {
             // this is the file we're looking for
             ATOMIC_BLOCK(ATOMIC_FORCEON) {
-              audio = entry;
               current = next;
-              next = UNKNOWN;
+              this->next = UNKNOWN;
             }
+            audio = entry;
 
 #if (DEBUGMODE>=1)
             dumpPath();
