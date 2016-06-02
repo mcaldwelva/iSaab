@@ -205,17 +205,17 @@ void displayRequest(CAN::msg &msg) {
             while (!ibus.send(msg));
           }
 
-          msg.data[2] = 0x05;
+          msg.data[2] = 0x05; // keep
           break;
         case 0xff: // available
-          msg.data[2] = 0x03;
+          msg.data[2] = 0x03; // request
           break;
         default: // taken
-          msg.data[2] = 0xff;
+          msg.data[2] = 0xff; // decline
           break;
       }
     } else {
-      msg.data[2] = 0xff;
+      msg.data[2] = 0xff; // decline
     }
 
     // display request

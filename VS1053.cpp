@@ -39,12 +39,14 @@ bool VS1053::begin() {
   // turn on sound card
   state = Standby;
   digitalWrite(VS1053_XRESET, HIGH);
+  while (!readyForData());
 
   // turn down analog
   setVolume(0xfe, 0xfe);
 
   // set internal speed, SC_MULT=4.5x, SC_ADD=0.0x
   sciWrite(SCI_CLOCKF, 0xc000);
+  while (!readyForData());
 
   // simple check to see if the card is responding
   return sciRead(SCI_STATUS) & 0x40;
@@ -242,7 +244,6 @@ void VS1053::setVolume(uint8_t left, uint8_t right) {
 uint16_t VS1053::sciRead(uint8_t addr) {
   uint16_t data;
 
-  while (!readyForData());
 #ifdef SPI_HAS_TRANSACTION
   SPI.beginTransaction(VS1053_SCI_SETTING);
 #endif
@@ -250,6 +251,7 @@ uint16_t VS1053::sciRead(uint8_t addr) {
 
   spiwrite(VS_READ_COMMAND);
   spiwrite(addr);
+  delayMicroseconds(10);
   data = spiread();
   data <<= 8;
   data |= spiread();
@@ -264,7 +266,6 @@ uint16_t VS1053::sciRead(uint8_t addr) {
 
 
 void VS1053::sciWrite(uint8_t addr, uint16_t data) {
-  while (!readyForData());
 #ifdef SPI_HAS_TRANSACTION
   SPI.beginTransaction(VS1053_SCI_SETTING);
 #endif
