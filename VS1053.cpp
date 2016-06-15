@@ -211,7 +211,10 @@ bool VS1053::loadPlugin(const __FlashStringHelper* fileName) {
 void VS1053::sendData(uint8_t data[], uint16_t len) {
   while (len > 0) {
     uint8_t siz = len > 32 ? 32 : len;
-    while (!readyForData());
+    while (!readyForData()) {
+      if (state == Off) return;
+    }
+
 #ifdef SPI_HAS_TRANSACTION
     SPI.beginTransaction(VS1053_SDI_SETTING);
 #endif
@@ -286,7 +289,7 @@ void VS1053::sciWrite(uint8_t addr, uint16_t data) {
 // check if sound card can take data
 inline __attribute__((always_inline))
 bool VS1053::readyForData() {
-  return fastDigitalRead(VS1053_XDREQ) || (state == Off);
+  return fastDigitalRead(VS1053_XDREQ);
 }
 
 inline __attribute__((always_inline))
