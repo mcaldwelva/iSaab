@@ -55,9 +55,6 @@ void CAN::begin(uint16_t speed, const uint16_t high[] PROGMEM, const uint16_t lo
       // http://www.microchip.com/forums/m/tm.aspx?m=236967&p=2
       cnf1 = 0xc7; cnf2 = 0xbe; cnf3 = 0x44;
       break;
-    case 1:
-      cnf1 = 0x00; cnf2 = 0x90; cnf3 = 0x02;
-      break;
     case 500:
       cnf1 = 0x01; cnf2 = 0x90; cnf3 = 0x02;
       break;
