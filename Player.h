@@ -17,8 +17,7 @@
 
 // filesystem stuff
 #define UNKNOWN       -1
-#define MAX_FILES     4095
-#define MAX_DEPTH     4
+#define MAX_DEPTH     3
 
 class Player : private VS1053
 {
@@ -65,12 +64,12 @@ class Player : private VS1053
     void dumpPath();
     struct {
       File h;
-      uint16_t base;
       uint16_t folder;
-      uint16_t tracks : 12;
-      bool hasFolders : 1;
-    } path[MAX_DEPTH];
+      uint16_t first;
+      uint16_t last;
+    } path[MAX_DEPTH + 1];
     int8_t depth;
+    bool hasFolders;
 };
 
 #endif // Player.h
