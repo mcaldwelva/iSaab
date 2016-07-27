@@ -152,10 +152,8 @@ void controlRequest(CAN::msg &msg) {
       if (msg.data[0] & 0x80) cdc.shuffle();
       break;
     case 0xb0: // MUTE on
-      cdc.pause();
-      break;
     case 0x14: // deselect CDC
-      cdc.standby();
+      cdc.pause();
       break;
     case 0xb1: // MUTE off
     case 0x24: // select CDC

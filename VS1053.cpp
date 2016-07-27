@@ -37,7 +37,7 @@ void VS1053::setup() {
 // power on
 bool VS1053::begin() {
   // turn on sound card
-  state = Standby;
+  state = Powerup;
   digitalWrite(VS1053_XRESET, HIGH);
   while (!readyForData());
 

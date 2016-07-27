@@ -132,17 +132,6 @@ void Player::play() {
 }
 
 
-void Player::standby() {
-#if (DEBUGMODE>=1)
-  Serial.println(F("STANDBY"));
-#endif
-  if (state != Off) {
-    state = Standby;
-    updateText();
-  }
-}
-
-
 void Player::pause() {
 #if (DEBUGMODE>=1)
   Serial.println(F("PAUSE"));
@@ -387,7 +376,7 @@ void Player::getStatus(uint8_t data[]) {
   data[4] |= track % 10;
 
   // play status
-  data[3] = (state == Paused) ? Playing : state;
+  data[3] = state & 0xf0;
 
   // disc
   data[3] |= disc % 9 + 1;
@@ -524,10 +513,10 @@ void Player::openNextTrack() {
       // count this folder if it contained files
       if (path[depth].last - path[depth].first > 0) folder++;
 
-    } else {
-
       // rewind if there are explorable sub-folders
-      if (hasFolders && file == path[depth].last && depth < MAX_DEPTH) path[depth].h.rewindDirectory();
+      if (hasFolders && depth < MAX_DEPTH) path[depth].h.rewindDirectory();
+
+    } else {
 
       // find the next folder
       entry = path[depth].h.openNextFile();
