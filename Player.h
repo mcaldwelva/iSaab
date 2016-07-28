@@ -68,7 +68,6 @@ class Player : private VS1053
       uint16_t last;
     } path[MAX_DEPTH + 1];
     int8_t depth;
-    bool hasFolders;
 };
 
 #endif // Player.h

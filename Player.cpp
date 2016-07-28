@@ -23,7 +23,6 @@ Player::Player() {
 
   // no music files in the root
   depth = -1;
-  hasFolders = false;
   path[0].folder = 0;
   path[0].first = 0;
   path[0].last = 0;
@@ -463,6 +462,7 @@ void Player::openNextTrack() {
   uint16_t file = current + 1;
 
   // search forward until we find the file
+  bool hasFolders;
   File entry;
   while (state != Off) {
 
