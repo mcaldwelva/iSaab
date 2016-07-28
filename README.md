@@ -58,4 +58,3 @@ http://www.ridgecrop.demon.co.uk/index.htm?fat32format.htm)
 
 ![inside](https://raw.githubusercontent.com/mcaldwelva/iSaab/master/data/inside.jpg)
 ![front](https://raw.githubusercontent.com/mcaldwelva/iSaab/master/data/front.jpg)
-![back](https://raw.githubusercontent.com/mcaldwelva/iSaab/master/data/back.jpg)
