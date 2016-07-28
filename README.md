@@ -57,4 +57,4 @@ http://www.ridgecrop.demon.co.uk/index.htm?fat32format.htm)
 * Create presets.txt in the root, containing up to 6 space separated numbers representing the play-order of the songs.
 
 ![inside](https://raw.githubusercontent.com/mcaldwelva/iSaab/master/data/inside.jpg)
-![front](https://raw.githubusercontent.com/mcaldwelva/iSaab/master/data/front.jpg)
+![back](https://raw.githubusercontent.com/mcaldwelva/iSaab/master/data/back.jpg)
