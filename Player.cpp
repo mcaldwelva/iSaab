@@ -69,8 +69,8 @@ bool Player::begin() {
     }
 
     // open SD root
-    path[++depth].h = SD.open(F("/"));
-    current = -1;
+    path[++depth].h = SD.open("/");
+    current = UNKNOWN;
 
     // load FLAC patch
     loadPlugin(F("PATCH053.BIN"));
@@ -203,6 +203,10 @@ void Player::prevTrack() {
         next--;
       }
     }
+  }
+
+  if (next == UNKNOWN) {
+    next = 0;
   }
 
   stopTrack();
@@ -448,21 +452,29 @@ void Player::dumpPath() {
 
 // find the new track number on the file system
 void Player::openNextTrack() {
+  static bool hasFolders;
+  uint16_t next = this->next;
+
 #if (DEBUGMODE>=1)
   Serial.print(F("OPENNEXTTRACK: "));
   Serial.println(next, DEC);
 #endif
 
   // go back to the closest starting point
-  uint16_t next = this->next;
   while (next < path[depth].first) {
     path[depth--].h.close();
   }
   uint16_t folder = path[depth].folder;
-  uint16_t file = current + 1;
+
+  // skip this folder if possible
+  uint16_t file;
+  if (next >= path[depth].last) {
+    file = path[depth].last;
+  } else {
+    file = current + 1;
+  }
 
   // search forward until we find the file
-  bool hasFolders;
   File entry;
   while (state != Off) {
 
@@ -513,16 +525,18 @@ void Player::openNextTrack() {
       // count this folder if it contained files
       if (path[depth].last - path[depth].first > 0) folder++;
 
-      // rewind if there are explorable sub-folders
-      if (hasFolders && depth < MAX_DEPTH) path[depth].h.rewindDirectory();
-
     } else {
 
-      // find the next folder
-      entry = path[depth].h.openNextFile();
-      while (entry && !entry.isDirectory()) {
-        entry.close();
+      if (depth < MAX_DEPTH) {
+        // rewind if there are explorable sub-folders
+        if (file == path[depth].last && hasFolders) path[depth].h.rewindDirectory();
+
+        // find the next folder
         entry = path[depth].h.openNextFile();
+        while (entry && !entry.isDirectory()) {
+          entry.close();
+          entry = path[depth].h.openNextFile();
+        }
       }
 
       // if we found one
@@ -548,16 +562,15 @@ void Player::openNextTrack() {
           // pop out
           path[depth--].h.close();
         } else {
-          // end of file system
-          next %= file;
-          folder = 0;
-
 #if (DEBUGMODE>=1)
           Serial.print(folder, DEC);
           Serial.println(F(" folders"));
           Serial.print(file, DEC);
           Serial.println(F(" files"));
 #endif
+          // end of file system
+          next %= file;
+          folder = 0;
         }
       }
     }
