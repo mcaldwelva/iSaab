@@ -463,6 +463,7 @@ void Player::openNextTrack() {
   // go back to the closest starting point
   while (next < path[depth].first) {
     path[depth--].h.close();
+    hasFolders = true;
   }
   uint16_t folder = path[depth].folder;
 
