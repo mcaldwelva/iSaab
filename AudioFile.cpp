@@ -62,7 +62,7 @@ void AudioFile::readId3Header(uint8_t ver) {
   do {
     if (ver >= 3) {
       // get id
-      read(tag, 4);
+      read(tag, ID3V23_ID);
 
       // get size
       read(buffer, 4);
@@ -72,7 +72,7 @@ void AudioFile::readId3Header(uint8_t ver) {
       read(buffer, 2);
     } else {
       // get id
-      read(tag, 3);
+      read(tag, ID3V20_ID);
 
       // get size
       read(buffer, 3);
@@ -92,7 +92,7 @@ void AudioFile::readId3Header(uint8_t ver) {
     // store it if it's one we care about
     for (uint8_t i = 0; i < MAX_TAG_ID; i++) {
       if ((ver >= 3 && !strncasecmp_P(tag, (Id3v23Fields + i * ID3V23_ID), ID3V23_ID))
-          || !strncasecmp_P(tag, (Id3v20Fields + i * ID3V20_ID), ID3V20_ID)) {
+          || (ver < 3 && !strncasecmp_P(tag, (Id3v20Fields + i * ID3V20_ID), ID3V20_ID))) {
         asciiStringCopy(tags[i], buffer, MAX_TAG_LENGTH, tag_size);
         break;
       }
