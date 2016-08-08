@@ -62,8 +62,8 @@ void processMessage() {
         controlRequest(msg);
         break;
 
-      case RX_CDC_PRESENT:
-        presenceRequest(msg);
+      case RX_CDC_POWER:
+        powerRequest(msg);
         break;
 
       case RX_SID_PRIORITY:
@@ -75,13 +75,13 @@ void processMessage() {
 
 
 inline __attribute__((always_inline))
-void presenceRequest(CAN::msg &msg) {
+void powerRequest(CAN::msg &msg) {
   uint8_t action = msg.data[3] & 0x0f;
 
   // reply id
-  msg.id = TX_CDC_PRESENT;
+  msg.id = TX_CDC_POWER;
 
-  // handle presence request
+  // handle power request
   switch (action) {
     case 0x02: // active
       msg.data[3] = 0x16;

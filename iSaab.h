@@ -12,8 +12,8 @@
  * http://pikkupossu.1g.fi/tomi/projects/i-bus/i-bus.html#6A1
  * http://pikkupossu.1g.fi/tomi/projects/i-bus/i-bus.html#6A2
  */
-#define RX_CDC_PRESENT           0x6a1
-#define TX_CDC_PRESENT           0x6a2
+#define RX_CDC_POWER             0x6a1
+#define TX_CDC_POWER             0x6a2
 
 
 /**
@@ -37,13 +37,13 @@
 
 
 // only accept these messages
-const uint16_t high_filters[] PROGMEM = {RX_CDC_PRESENT, RX_CDC_CONTROL, 0x7ff};
+const uint16_t high_filters[] PROGMEM = {RX_CDC_POWER, RX_CDC_CONTROL, 0x7ff};
 const uint16_t low_filters[] PROGMEM = {RX_SID_PRIORITY, 0x000, 0x000, 0x000, 0x7ff};
 
 
 // prototypes
 void processMessage();
-void presenceRequest(CAN::msg &);
+void powerRequest(CAN::msg &);
 void controlRequest(CAN::msg &);
 void displayRequest(CAN::msg &);
 
