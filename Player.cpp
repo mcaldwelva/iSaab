@@ -471,6 +471,7 @@ void Player::openNextTrack() {
   uint16_t file;
   if (next >= path[depth].last) {
     file = path[depth].last;
+    if (path[depth].last - path[depth].first > 0) folder++;
   } else {
     file = current + 1;
   }
