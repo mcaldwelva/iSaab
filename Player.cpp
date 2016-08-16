@@ -22,7 +22,7 @@ Player::Player() {
   next = 0;
 
   // no music files in the root
-  depth = -1;
+  depth = 0;
   path[0].folder = 0;
   path[0].first = 0;
   path[0].last = 0;
@@ -69,7 +69,7 @@ bool Player::begin() {
     }
 
     // open SD root
-    path[++depth].h = SD.open("/");
+    path[0].h = SD.open("/");
     current = UNKNOWN;
 
     // load FLAC patch
@@ -100,9 +100,10 @@ void Player::end() {
     stopTrack();
 
     // collapse path structure
-    while (depth >= 0) {
+    while (depth > 0) {
       path[depth--].h.close();
     }
+    path[0].h.close();
 
     // turn off sound card
     VS1053::end();
