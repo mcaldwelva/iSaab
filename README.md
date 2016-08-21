@@ -37,13 +37,9 @@ Procedure:
 | XDCS       | 12      | D6 |
 | DREQ       | 5       | D3 |
 
-* Modify Arduino/libraries/SD/src/SD.cpp to open the card at full speed:
+* Patch SD library:
 
-> return card.init(SPI_FULL_SPEED, csPin) &&
-
-* Modify Arduino/libraries/SD/src/utility/SdFile.cpp to allow non-ASCII characters:
-
-> if (i > n || c < 0x20 || c == 0x7F) return false;
+> C:\Program Files (x86)\Arduino\libraries> patch -p1 < %HOMEPATH%\Documents\Arduino\iSaab\data\SD.diff
 
 * Upload the iSaab code to the module
 * Plug it in...
