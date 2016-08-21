@@ -50,7 +50,7 @@ class Player : private VS1053
     volatile uint16_t next;
     volatile bool shuffled;
     uint16_t presets[NUM_PRESETS];
-    uint8_t rapidCount;
+    uint8_t repeatCount;
 
     // display stuff
     void updateText();

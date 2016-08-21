@@ -15,7 +15,7 @@
 
 Player::Player() {
   // initial player state
-  rapidCount = 0;
+  repeatCount = 0;
   display.tag = 0;
 
   // select the first track
@@ -168,19 +168,21 @@ void Player::nextTrack() {
   Serial.println(F("NEXT"));
 #endif
 
-  if (shuffled) {
-    do { next = RANDOM_TRACK; } while (next == current);
-  } else {
-    // if no track is queued up
-    if (next == UNKNOWN) {
-      next = current + 1;
+  if (state != Changing) {
+    if (shuffled) {
+      do { next = RANDOM_TRACK; } while (next == current);
     } else {
-      // keep skipping
-      next++;
+      // if no track is queued up
+      if (next == UNKNOWN) {
+        next = current + 1;
+      } else {
+        // keep skipping
+        next++;
+      }
     }
-  }
 
-  stopTrack();
+    stopTrack();
+  }
 }
 
 
@@ -189,28 +191,30 @@ void Player::prevTrack() {
   Serial.println(F("PREVIOUS"));
 #endif
 
-  if (trackTime()) {
-    // start this track over again
-    next = current;
-  } else {
-    if (shuffled) {
-      do { next = RANDOM_TRACK; } while (next == current);
+  if (state != Changing) {
+    if (repeatCount == 1 && trackTime()) {
+      // start this track over again
+      next = current;
     } else {
-      // if no track is queued up
-      if (next == UNKNOWN) {
-        next = current - 1;
+      if (shuffled) {
+        do { next = RANDOM_TRACK; } while (next == current);
       } else {
-        // keep skipping
-        next--;
+        // if no track is queued up
+        if (next == UNKNOWN) {
+          next = current - 1;
+        } else {
+          // keep skipping
+          next--;
+        }
       }
     }
-  }
 
-  if (next == UNKNOWN) {
-    next = 0;
-  }
+    if (next == UNKNOWN) {
+      next = 0;
+    }
 
-  stopTrack();
+    stopTrack();
+  }
 }
 
 
@@ -219,12 +223,14 @@ void Player::nextDisc() {
   Serial.println(F("NEXT DISC"));
 #endif
 
-  if (shuffled) {
-    display.tag = (abs(display.tag) + 1) % (AudioFile::MAX_TAG_ID + 1);
-    updateText();
-  } else {
-    next = path[depth].last;
-    stopTrack();
+  if (state != Changing) {
+    if (shuffled) {
+      display.tag = (abs(display.tag) + 1) % (AudioFile::MAX_TAG_ID + 1);
+      updateText();
+    } else {
+      next = path[depth].last;
+      stopTrack();
+    }
   }
 }
 
@@ -268,8 +274,10 @@ void Player::preset(uint8_t memory) {
     }
     updateText();
   } else {
-    next = presets[memory - 1];
-    stopTrack();
+    if (state != Changing) {
+      next = presets[memory - 1];
+      stopTrack();
+    }
   }
 }
 
@@ -278,14 +286,13 @@ void Player::rewind() {
 #if (DEBUGMODE>=1)
   Serial.println(F("REWIND"));
 #endif
-  rapidCount++;
   state = Rapid;
   updateText();
 
   int8_t seconds;
-  if (rapidCount >= 15) {
+  if (repeatCount >= 10) {
     seconds = -12;
-  } else if (rapidCount >= 10) {
+  } else if (repeatCount >= 5) {
     seconds = -7;
   } else {
     seconds = -3;
@@ -298,14 +305,13 @@ void Player::forward() {
 #if (DEBUGMODE>=1)
   Serial.println(F("FAST FORWARD"));
 #endif
-  rapidCount++;
   state = Rapid;
   updateText();
 
   int8_t seconds;
-  if (rapidCount >= 15) {
+  if (repeatCount >= 10) {
     seconds = +10;
-  } else if (rapidCount >= 10) {
+  } else if (repeatCount >= 5) {
     seconds = +5;
   } else {
     seconds = +1;
@@ -321,8 +327,9 @@ void Player::normal() {
 #endif
     state = Playing;
     updateText();
-    rapidCount = 0;
   }
+
+  repeatCount = 0;
 }
 
 
@@ -331,6 +338,9 @@ void Player::getStatus(uint8_t data[]) {
   uint16_t time;
   uint8_t track;
   uint8_t disc;
+
+  // keep track of repeated commands
+  repeatCount++;
 
   // gather track information
   if (next == UNKNOWN) {
@@ -454,12 +464,17 @@ void Player::dumpPath() {
 // find the new track number on the file system
 void Player::openNextTrack() {
   static bool hasFolders;
-  uint16_t next = this->next;
 
 #if (DEBUGMODE>=1)
   Serial.print(F("OPENNEXTTRACK: "));
   Serial.println(next, DEC);
 #endif
+
+  // block further commands if changing folders
+  State save = state;
+  if (next < path[depth].first || next > path[depth].last) {
+    state = Changing;
+  }
 
   // go back to the closest starting point
   while (next < path[depth].first) {
@@ -505,6 +520,7 @@ void Player::openNextTrack() {
             ATOMIC_BLOCK(ATOMIC_FORCEON) {
               current = next;
               this->next = UNKNOWN;
+              if (state == Changing) state = save;
             }
             audio = entry;
 
