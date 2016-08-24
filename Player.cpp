@@ -514,8 +514,8 @@ void Player::openNextTrack() {
             ATOMIC_BLOCK(ATOMIC_FORCEON) {
               current = next;
               next = UNKNOWN;
+              audio = entry;
             }
-            audio = entry;
 
 #if (DEBUGMODE>=1)
             dumpPath();
