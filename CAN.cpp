@@ -15,6 +15,8 @@
  *   1. send: guarantees transmission order of up to 12 consecutive messages
  *   2. receive: get RTR bit from the right place
  *   3. simplified public interface
+ *
+ *  10/12/2016 Mike C. - Fixed clearing Rx buffers
  */
 
 #include <SPI.h>
@@ -84,8 +86,10 @@ void CAN::begin(uint16_t speed, const uint16_t high[] PROGMEM, const uint16_t lo
   // allow rollover from RXB0 to RXB1
   modifyRegister(RXB0CTRL, _BV(BUKT), 0xff);
 
+#if (DEBUGMODE>=1)
   // light up the corresponding LED when a buffer is occupied
   writeRegister(BFPCTRL, _BV(B1BFE) | _BV(B1BFM) | _BV(B0BFE) | _BV(B0BFM));
+#endif
 
   // standard operating mode
   setMode(Normal);
@@ -218,15 +222,6 @@ bool CAN::receive(msg &message) {
 #ifdef SPI_HAS_TRANSACTION
   SPI.endTransaction();
 #endif
-
-  // clear interrupt flag
-  uint8_t flag;
-  if (address) {
-    flag = _BV(RX1IF);
-  }	else {
-    flag = _BV(RX0IF);
-  }
-  modifyRegister(CANINTF, flag, 0x00);
 
   return true;
 }
