@@ -119,7 +119,7 @@ void AudioFile::readVorbisComments() {
   tag_count = BE8x4(buffer);
 
   // search through tags
-  for (int i = 0; i < tag_count; i++) {
+  while (tag_count-- > 0) {
     // read field size
     read(buffer, 4);
     tag_size = BE8x4(buffer);
@@ -157,7 +157,7 @@ void AudioFile::readFlacHeader() {
   // read metablocks
   do {
     // block header
-    read(buffer, 4);
+    if (read(buffer, 4) == -1) break;
     block_type = buffer[0] & 0x7F;
     last_block = buffer[0] & 0x80;
     block_size = LE8x3((buffer + 1));
