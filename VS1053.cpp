@@ -100,9 +100,12 @@ bool VS1053::startTrack() {
   sciWrite(SCI_DECODETIME, 0x00);
 
   // process header
-  uint8_t *buffer;
-  uint16_t bytesRead = audio.readHeader(buffer);
-  sendData(buffer, bytesRead);
+  uint16_t bytesRead;
+  do {
+    uint8_t *buffer;
+    bytesRead = audio.readHeader(buffer);
+    sendData(buffer, bytesRead);
+  } while (bytesRead > 0);
 
   // turn analog up
   setVolume(0x00, 0x00);

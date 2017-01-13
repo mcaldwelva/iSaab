@@ -23,7 +23,6 @@ class AudioFile : public File
     int readBlock(uint8_t *&buf);
     bool isFlac() { return flac; };
     String getTag(uint8_t tag);
-    void close();
 
   private:
     bool flac;
@@ -33,7 +32,7 @@ class AudioFile : public File
     void asciiStringCopy(String &dst, char src[], uint8_t dsize, uint8_t ssize);
     void readId3Header(uint8_t ver);
     void readVorbisComments();
-    void readFlacHeader();
+    int readFlacHeader();
     void readOggHeader();
 };
 

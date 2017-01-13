@@ -16,12 +16,18 @@
 
 AudioFile::AudioFile() {
   flac = false;
-  buffer = NULL;
+  buffer = SdVolume::cacheClear();
 }
 
 
 void AudioFile::operator=(const File &file) {
   File::operator=(file);
+
+  // reset properties
+  flac = false;
+  for (uint8_t i = 0; i < MAX_TAG_ID; i++) {
+    tags[i] = "";
+  }
 }
 
 
@@ -146,13 +152,11 @@ void AudioFile::readVorbisComments() {
 }
 
 
-void AudioFile::readFlacHeader() {
+int AudioFile::readFlacHeader() {
+  char buffer[4];
   uint8_t block_type;
   bool last_block;
   uint32_t block_size;
-
-  // keep "fLaC"
-  buffer+= 4;
 
   // read metablocks
   do {
@@ -165,12 +169,8 @@ void AudioFile::readFlacHeader() {
     // block data
     switch (block_type) {
       case 0: // streaminfo
-        // make this the last block
-        buffer[0] |= 0x80;
-        buffer+= 4;
-        read(buffer, block_size);
-        buffer+= block_size;
-        break;
+        seek(position() + block_size);
+        return position();
 
       case 4: // vorbis_comment
         // process comment block
@@ -182,6 +182,8 @@ void AudioFile::readFlacHeader() {
         break;
     }
   } while (!last_block);
+
+  return 0;
 }
 
 
@@ -222,42 +224,46 @@ void AudioFile::readOggHeader() {
 }
 
 
-// read important tags, return minimal header
+// read tags, return minimal header
 int AudioFile::readHeader(uint8_t *&buf) {
-  char header[48];
-  buffer = (uint8_t *)&header;
-  seek(0);
-
-  // determine file type
-  read(header, 4);
-  if (!strncmp_P(header, PSTR("fLaC"), 4)) {
-    // FLAC with Vorbis comments
-    readFlacHeader();
-    flac = true;
-  }
-  else if (!strncmp_P(header, PSTR("ID3"), 3)) {
-    // MP3/AAC with ID3v2.x tags
-    readId3Header(header[3]);
-  }
-  else if (!strncmp_P(header, PSTR("OggS"), 4)) {
-    // Ogg with Vorbis comments
-    readOggHeader();
-  } else {
-    seek(0);
-  }
-
-  // use file name if no title found
-  if (tags[Title].length() == 0) {
-    tags[Title] = name();
-  }
-
-  // copy header to cache
-  uint16_t siz = buffer - (uint8_t *)&header;
-  buffer = SdVolume::cacheClear();
-  memcpy(buffer, header, siz);
-
-  // return cache pointer
+  int siz = 0;
   buf = buffer;
+
+  if (position() == 0) {
+    // beginning of header
+    char id[4];
+    read(id, 4);
+
+    if (!strncmp_P(id, PSTR("fLaC"), 4)) {
+      // FLAC with Vorbis comments
+      siz = readFlacHeader();
+      flac = true;
+    }
+    else if (!strncmp_P(id, PSTR("ID3"), 3)) {
+      // MP3/AAC with ID3v2.x tags
+      readId3Header(id[3]);
+    }
+    else if (!strncmp_P(id, PSTR("OggS"), 4)) {
+      // Ogg with Vorbis comments
+      readOggHeader();
+    } else {
+      seek(0);
+    }
+  }  else {
+  // continuing header
+  if (isFlac()) {
+      readFlacHeader();
+    }
+  }
+
+  // end of header
+  if (siz == 0) {
+    // use file name if no title found
+    if (tags[Title].length() == 0) {
+      tags[Title] = name();
+    }
+  }
+
   return siz;
 }
 
@@ -279,18 +285,5 @@ int AudioFile::readBlock(uint8_t *&buf) {
   }
 
   return siz;
-}
-
-
-// reset properties on closing
-void AudioFile::close() {
-  flac = false;
-  buffer = NULL;
-
-  for (uint8_t i = 0; i < MAX_TAG_ID; i++) {
-    tags[i] = "";
-  }
-
-  File::close();
 }
 
