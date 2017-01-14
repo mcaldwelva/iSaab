@@ -188,7 +188,7 @@ int AudioFile::readFlacHeader() {
 
 
 void AudioFile::readOggHeader() {
-  uint8_t seg_count;
+  int seg_count;
   uint16_t seg_size;
 
   // skip header info
@@ -199,32 +199,27 @@ void AudioFile::readOggHeader() {
 
   // read segment table
   seg_size = 0;
-  read(buffer, seg_count);
-  for (int i = 0; i < seg_count; i++) {
-    seg_size += (uint8_t) buffer[i];
+  while (seg_count-- > 0) {
+    seg_size += read();
   }
-  seek(position() + seg_size);
 
-  // verify beginning of page
-  read(buffer, 4);
-  if (!strncmp_P((char *)buffer, PSTR("OggS"), 4)) {
-    // skip header info
-    seek(position() + 22);
+  // skip to the next block
+  seek(position() + seg_size + 26);
 
-    // skip segment table
-    seg_count = read();
-    seek(position() + seg_count + 7);
+  // skip segment table
+  seg_count = read();
+  seek(position() + seg_count + 7);
 
-    // process comment block
-    readVorbisComments();
-  }
+  // process comment block
+  readVorbisComments();
 
   // rewind
   seek(0);
 }
 
 
-// read tags, return minimal header
+// reads audio header information, returning the minimum 
+// returns a pointer to the buffer and the number of bytes read
 int AudioFile::readHeader(uint8_t *&buf) {
   int siz = 0;
   buf = buffer;
@@ -250,9 +245,9 @@ int AudioFile::readHeader(uint8_t *&buf) {
       seek(0);
     }
   }  else {
-  // continuing header
-  if (isFlac()) {
-      readFlacHeader();
+    // continuing header
+    if (isFlac()) {
+        readFlacHeader();
     }
   }
 
