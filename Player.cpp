@@ -426,7 +426,7 @@ void Player::updateText() {
   uint8_t i, j;
   String text;
 
-  if (state == Playing) {
+  if (audio && state == Playing) {
     text = audio.getTag(abs(display.tag) - 1);
   }
 

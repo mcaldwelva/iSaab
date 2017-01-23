@@ -15,7 +15,6 @@
 
 
 AudioFile::AudioFile() {
-  flac = false;
   buffer = SdVolume::cacheClear();
 }
 
