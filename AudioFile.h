@@ -64,15 +64,6 @@ const char Id3v20Fields[] PROGMEM =
   "TCO"
   "TYE";
 
-// WMA
-#define GUID 16
-const char ASF_Header_Object[] PROGMEM =
-  {"\x30\x26\xB2\x75\x8E\x66\xCF\x11\xA6\xD9\x00\xAA\x00\x62\xCE\x6C"};
-const char ASF_Content_Description_Object[] PROGMEM =
-  {"\x33\x26\xB2\x75\x8E\x66\xCF\x11\xA6\xD9\x00\xAA\x00\x62\xCE\x6C"};
-const char ASF_Extended_Content_Description_Object[] PROGMEM =
-  {"\x40\xA4\xD0\xD2\x07\xE3\xD2\x11\x97\xF0\x00\xA0\xC9\x5E\xA8\x50"};
-
 #define ASF_ID 15
 const char AsfFields[] PROGMEM =
   "Title\x0         "
@@ -81,5 +72,14 @@ const char AsfFields[] PROGMEM =
   "Author\x0        "
   "WM/Genre\x0      "
   "WM/Year\x0       ";
+
+#define GUID 16
+const byte ASF_Header_Object[] PROGMEM =
+  {0x30,0x26,0xB2,0x75,0x8E,0x66,0xCF,0x11,0xA6,0xD9,0x00,0xAA,0x00,0x62,0xCE,0x6C};
+const byte ASF_Content_Description_Object[] PROGMEM =
+  {0x33,0x26,0xB2,0x75,0x8E,0x66,0xCF,0x11,0xA6,0xD9,0x00,0xAA,0x00,0x62,0xCE,0x6C};
+const byte ASF_Extended_Content_Description_Object[] PROGMEM =
+  {0x40,0xA4,0xD0,0xD2,0x07,0xE3,0xD2,0x11,0x97,0xF0,0x00,0xA0,0xC9,0x5E,0xA8,0x50};
+
 #endif // AUDIOFILE_H
 
