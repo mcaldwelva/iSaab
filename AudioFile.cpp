@@ -12,6 +12,7 @@
 #define LE8x4(x) (((uint32_t)((uint8_t)x[0])) << 24 | ((uint32_t)((uint8_t)x[1])) << 16 | ((uint32_t)((uint8_t)x[2])) << 8 | ((uint32_t)((uint8_t)x[3])))
 #define LE8x3(x) (((uint32_t)((uint8_t)x[0])) << 16 | ((uint32_t)((uint8_t)x[1])) <<  8 | ((uint32_t)((uint8_t)x[2])))
 #define BE8x4(x) (((uint32_t)((uint8_t)x[3])) << 24 | ((uint32_t)((uint8_t)x[2])) << 16 | ((uint32_t)((uint8_t)x[1])) << 8 | ((uint32_t)((uint8_t)x[0])))
+#define BE8x2(x) (((uint16_t)((uint8_t)x[1])) << 8 | ((uint16_t)((uint8_t)x[0])))
 
 
 AudioFile::AudioFile() {
@@ -40,11 +41,11 @@ String AudioFile::getTag(uint8_t tag) {
 }
 
 
-// copy ascii/wide/unicode string to ascii
-void AudioFile::asciiStringCopy(String &dst, char src[], uint8_t dsize, uint8_t ssize) {
-  for (uint8_t i = 0; i < ssize && dst.length() < dsize; i++) {
-    if (32 <= src[i] && src[i] <= 126) {
-      dst += src[i];
+// append ascii chars from string to specified tag
+void AudioFile::updateTag(uint8_t tag, char src[], uint8_t ssize) {
+  for (uint8_t i = 0; i < ssize && tags[tag].length() < MAX_TAG_LENGTH; i++) {
+    if (' ' <= src[i] && src[i] <= '~') {
+      tags[tag] += src[i];
     }
   }
 }
@@ -85,23 +86,22 @@ void AudioFile::readId3Header(uint8_t ver) {
     }
 
     // read the tag field
-    int32_t skip = tag_size - TAG_BUFFER;
-    if (skip < 0) {
-      read(buffer, tag_size);
-    } else {
+    uint32_t skip = position() + tag_size;
+    if (tag_size > TAG_BUFFER) {
       tag_size = TAG_BUFFER;
-      read(buffer, tag_size);
-      seek(position() + skip);
     }
 
     // store it if it's one we care about
     for (uint8_t i = 0; i < MAX_TAG_ID; i++) {
       if ((ver >= 3 && !strncasecmp_P(tag, (Id3v23Fields + i * ID3V23_ID), ID3V23_ID))
           || (ver < 3 && !strncasecmp_P(tag, (Id3v20Fields + i * ID3V20_ID), ID3V20_ID))) {
-        asciiStringCopy(tags[i], buffer, MAX_TAG_LENGTH, tag_size);
+        read(buffer, tag_size);
+        updateTag(i, buffer, tag_size);
         break;
       }
     }
+
+    seek(skip);
   } while (tag_size > 0 && position() < header_end);
 
   // skip to the end
@@ -130,23 +130,22 @@ void AudioFile::readVorbisComments() {
     tag_size = BE8x4(buffer);
 
     // read the tag field
-    int32_t skip = tag_size - TAG_BUFFER;
-    if (skip < 0) {
-      read(buffer, tag_size);
-    } else {
+    uint32_t skip = position() + tag_size;
+    if (tag_size > TAG_BUFFER) {
       tag_size = TAG_BUFFER;
-      read(buffer, tag_size);
-      seek(position() + skip);
     }
+    read(buffer, tag_size);
 
     // store it if it's one we care about
     uint8_t delim = strchr(buffer, '=') - buffer + 1;
     for (uint8_t i = 0; i < MAX_TAG_ID; i++) {
       if (!strncasecmp_P(buffer, (VorbisFields + i * VORBIS_ID), delim)) {
-        asciiStringCopy(tags[i], (buffer + delim), MAX_TAG_LENGTH, tag_size - delim);
+        updateTag(i, (buffer + delim), tag_size - delim);
         break;
       }
     }
+
+    seek(skip);
   }
 }
 
@@ -217,6 +216,125 @@ void AudioFile::readOggHeader() {
 }
 
 
+void AudioFile::readWmaHeader() {
+  char buffer[TAG_BUFFER];
+
+  // Object ID
+  seek(GUID);
+
+  // Object Size
+  read(buffer, 8);
+
+  // Number of Header Objects
+  read(buffer, 4);
+  uint32_t object_count = BE8x4(buffer);
+
+  // Reserved Bytes
+  read(buffer, 2);
+
+  // for each object
+  while (object_count-- > 0) {
+    uint32_t next_object;
+
+    read(buffer, GUID);
+    if (!memcmp_P(buffer, ASF_Content_Description_Object, GUID)) {
+      // Object Size
+      read(buffer, 4);
+      next_object = position() - 20 + BE8x4(buffer);
+      read(buffer, 4);
+
+      // read field lengths
+      read(buffer, 2);
+      uint32_t title_size = BE8x2(buffer);
+      read(buffer, 2);
+      uint32_t artist_size = BE8x2(buffer);
+      read(buffer, 6);
+
+      // read the tag field
+      uint32_t skip = position() + title_size;
+      if (title_size > TAG_BUFFER) {
+        title_size = TAG_BUFFER;
+      }
+      read(buffer, title_size);
+      seek(skip);
+      updateTag(Title, buffer, title_size);
+
+      // read the tag field
+      skip = position() + artist_size;
+      if (artist_size > TAG_BUFFER) {
+        artist_size = TAG_BUFFER;
+      }
+      read(buffer, artist_size);
+      seek(skip);
+      updateTag(Artist, buffer, artist_size);
+    }
+    else if (!memcmp_P(buffer, ASF_Extended_Content_Description_Object, GUID)) {
+      // Object Size
+      read(buffer, 4);
+      next_object = position() - 20 + BE8x4(buffer);
+      read(buffer, 4);
+
+      // Content Descriptors Count
+      read(buffer, 2);
+      uint16_t tag_count = BE8x2(buffer);
+
+      while (tag_count-- > 0) {
+        // Descriptor Name Length
+        read(buffer, 2);
+        uint16_t name_size = BE8x2(buffer);
+
+        // Descriptor Name
+        uint32_t skip = position() + name_size;
+        name_size /= 2;
+        if (name_size > ASF_ID) {
+          name_size = ASF_ID;
+        }
+        for (uint8_t j = 0; j < name_size; j++) {
+          read((buffer + j), 2);
+        }
+        seek(skip);
+
+        // Descriptor Value Data Type
+        read();
+        read();
+
+        // Descriptor Value Length
+        read((buffer + name_size), 2);
+        uint16_t value_size = BE8x2((buffer + name_size));
+        skip = position() + value_size;
+        if (value_size > TAG_BUFFER) {
+          value_size = TAG_BUFFER;
+        }
+
+        // store it if it's one we care about
+        for (uint8_t i = 0; i < MAX_TAG_ID; i++) {
+          if (!strncmp_P(buffer, (AsfFields + i * ASF_ID), name_size)) {
+            // Descriptor Value
+            read(buffer, value_size);
+            updateTag(i, buffer, value_size);
+            break;
+          }
+        }
+
+        // next descriptor
+        seek(skip);
+      }
+    }
+    else {
+      // Object Size
+      read(buffer, 4);
+      next_object = position() - 20 + BE8x4(buffer);
+    }
+
+    // next object
+    seek(next_object);
+  }
+
+  // rewind
+  seek(0);
+}
+
+
 // reads audio header information, returning the minimum 
 // returns a pointer to the buffer and the number of bytes read
 int AudioFile::readHeader(uint8_t *&buf) {
@@ -240,7 +358,12 @@ int AudioFile::readHeader(uint8_t *&buf) {
     else if (!strncmp_P(id, PSTR("OggS"), 4)) {
       // Ogg with Vorbis comments
       readOggHeader();
-    } else {
+    }
+    else if (!memcmp_P((const char *) buffer, ASF_Header_Object, GUID)) {
+      // WMA file
+      readWmaHeader();
+    }
+    else {
       seek(0);
     }
   }  else {
