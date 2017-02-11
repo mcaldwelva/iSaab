@@ -341,7 +341,8 @@ void AudioFile::readAsfHeader() {
 
 void AudioFile::readQtffHeader() {
   char buffer[TAG_BUFFER];
-  uint32_t next_atom[5];
+  uint32_t next_atom;
+  uint32_t parent_atom = size();
   uint8_t depth = 0;
 
   // skip file type
@@ -350,7 +351,7 @@ void AudioFile::readQtffHeader() {
   do {
     // atom size
     read(buffer, 4);
-    next_atom[depth] = position() - 4 + BE8x4(buffer);
+    next_atom = position() - 4 + BE8x4(buffer);
 
     // atom name
     read(buffer, 4);
@@ -366,7 +367,7 @@ void AudioFile::readQtffHeader() {
           seek(position() + 16);
 
           // read tag value
-          uint16_t value_size = next_atom[depth] - position();
+          uint16_t value_size = next_atom - position();
           if (value_size > TAG_BUFFER) {
             value_size = TAG_BUFFER;
           }
@@ -377,7 +378,7 @@ void AudioFile::readQtffHeader() {
       }
 
       // skip to next atom in list
-      seek(next_atom[depth]);
+      seek(next_atom);
     } else {
       // determine if this atom is in the path to tags
       if (!strncmp_P(buffer, (iTunesPath + depth * QTFF_ID), QTFF_ID)) {
@@ -385,17 +386,15 @@ void AudioFile::readQtffHeader() {
           // skip info at beginning of meta atom
           read(buffer, 4);
         }
+        parent_atom = next_atom;
       } else {
         // skip to next atom
-        seek(next_atom[depth]);
+        seek(next_atom);
       }
     }
 
-    if (depth > 0 && position() >= next_atom[depth - 1]) {
-      // if we get here, we found tags or DNE
-      break;
-    }
-  } while (position() < size());
+  } while (position() < parent_atom);
+  // if we get here, we found tags or DNE
 
   // rewind
   seek(0);
