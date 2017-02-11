@@ -34,7 +34,8 @@ class AudioFile : public File
     void readVorbisComments();
     int readFlacHeader();
     void readOggHeader();
-    void readWmaHeader();
+    void readQtffHeader();
+    void readAsfHeader();
 };
 
 #define VORBIS_ID 12
@@ -63,6 +64,18 @@ const char Id3v20Fields[] PROGMEM =
   "TP2"
   "TCO"
   "TYE";
+
+#define QTFF_ID 4
+const char iTunesFields[] PROGMEM =
+  "\xa9""nam"
+  "\xa9""alb"
+  "\xa9""ART"
+     "a""ART"
+  "\xa9""gen"
+  "\xa9""day";
+
+const char iTunesPath[] PROGMEM =
+  "moov""udta""meta""ilst";
 
 #define ASF_ID 15
 const char AsfFields[] PROGMEM =
