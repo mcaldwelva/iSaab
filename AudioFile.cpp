@@ -85,22 +85,23 @@ void AudioFile::readId3Header(uint8_t ver) {
       tag_size = BE8x3(buffer);
     }
 
-    // read the tag field
+    // read the tag value
     uint32_t skip = position() + tag_size;
-    if (tag_size > TAG_BUFFER) {
-      tag_size = TAG_BUFFER;
-    }
 
     // store it if it's one we care about
     for (uint8_t i = 0; i < MAX_TAG_ID; i++) {
       if (ver >= 3 ? !strncasecmp_P(tag, (Id3v23Fields + i * ID3V23_ID), ID3V23_ID)
                    : !strncasecmp_P(tag, (Id3v20Fields + i * ID3V20_ID), ID3V20_ID)) {
+        if (tag_size > TAG_BUFFER) {
+          tag_size = TAG_BUFFER;
+        }
         read(buffer, tag_size);
         updateTag(i, buffer, tag_size);
         break;
       }
     }
 
+    // next tag
     seek(skip);
   } while (tag_size > 0 && position() < header_end);
 
@@ -145,6 +146,7 @@ void AudioFile::readVorbisComments() {
       }
     }
 
+    // next tag
     seek(skip);
   }
 }
@@ -260,8 +262,8 @@ void AudioFile::readAsfHeader() {
         title_size = TAG_BUFFER;
       }
       read(buffer, title_size);
-      seek(skip);
       updateTag(Title, buffer, title_size);
+      seek(skip);
 
       // Author
       skip = position() + artist_size;
@@ -269,8 +271,8 @@ void AudioFile::readAsfHeader() {
         artist_size = TAG_BUFFER;
       }
       read(buffer, artist_size);
-      seek(skip);
       updateTag(Artist, buffer, artist_size);
+      seek(skip);
     }
     else if (!memcmp_P(buffer, ASF_Extended_Content_Description_Object, GUID)) {
       // Object Size
@@ -299,28 +301,28 @@ void AudioFile::readAsfHeader() {
         seek(skip);
 
         // Descriptor Value Data Type
-        read();
-        read();
+        read((buffer + name_size), 2);
 
         // Descriptor Value Length
         read((buffer + name_size), 2);
         uint16_t value_size = LE8x2((buffer + name_size));
+
+        // Descriptor Value
         skip = position() + value_size;
-        if (value_size > TAG_BUFFER) {
-          value_size = TAG_BUFFER;
-        }
 
         // store it if it's one we care about
         for (uint8_t i = 0; i < MAX_TAG_ID; i++) {
           if (!strncmp_P(buffer, (AsfFields + i * ASF_ID), name_size)) {
-            // Descriptor Value
+            if (value_size > TAG_BUFFER) {
+              value_size = TAG_BUFFER;
+            }
             read(buffer, value_size);
             updateTag(i, buffer, value_size);
             break;
           }
         }
 
-        // next descriptor
+        // next Descriptor
         seek(skip);
       }
     }
@@ -330,7 +332,7 @@ void AudioFile::readAsfHeader() {
       next_object = position() - 20 + LE8x4(buffer);
     }
 
-    // next object
+    // next Object
     seek(next_object);
   }
 
@@ -345,7 +347,7 @@ void AudioFile::readQtffHeader() {
   uint32_t parent_atom = size();
   uint8_t depth = 0;
 
-  // skip file type
+  // skip 'ftyp' atom
   seek(0x20);
 
   do {
@@ -356,17 +358,25 @@ void AudioFile::readQtffHeader() {
     // atom name
     read(buffer, 4);
 
-    // if we're in tag list
-    if (depth == 4) {
-
+    // if we're not in tag list
+    if (depth < 4) {
+      // determine if this atom is in the path to tags
+      if (!strncmp_P(buffer, (iTunesPath + depth * QTFF_ID), QTFF_ID)) {
+        if (depth++ == 2) {
+          // skip 'meta' version info
+          read(buffer, 4);
+        }
+        parent_atom = next_atom;
+      } else {
+        // skip to next atom
+        seek(next_atom);
+      }
+    } else {
       // store it if it's one we care about
       for (uint8_t i = 0; i < MAX_TAG_ID; i++) {
         if (!strncmp_P(buffer, (iTunesFields + i * QTFF_ID), QTFF_ID)) {
-
-          // skip directly to the value of this data atom
+          // skip to 'data' value
           seek(position() + 16);
-
-          // read tag value
           uint16_t value_size = next_atom - position();
           if (value_size > TAG_BUFFER) {
             value_size = TAG_BUFFER;
@@ -377,31 +387,18 @@ void AudioFile::readQtffHeader() {
         }
       }
 
-      // skip to next atom in list
+      // next tag
       seek(next_atom);
-    } else {
-      // determine if this atom is in the path to tags
-      if (!strncmp_P(buffer, (iTunesPath + depth * QTFF_ID), QTFF_ID)) {
-        if (depth++ == 2) {
-          // skip info at beginning of meta atom
-          read(buffer, 4);
-        }
-        parent_atom = next_atom;
-      } else {
-        // skip to next atom
-        seek(next_atom);
-      }
     }
 
   } while (position() < parent_atom);
-  // if we get here, we found tags or DNE
 
   // rewind
   seek(0);
 }
 
 
-// reads audio header information, returning the minimum 
+// reads audio header information
 // returns a pointer to the buffer and the number of bytes read
 int AudioFile::readHeader(uint8_t *&buf) {
   int siz = 0;
@@ -412,21 +409,22 @@ int AudioFile::readHeader(uint8_t *&buf) {
     char id[4];
     read(id, 4);
 
-    if (!strncmp_P(id, PSTR("fLaC"), 4)) {
+    // look for supported magic numbers
+    if (!memcmp_P(id, PSTR("fLaC"), 4)) {
       siz = readFlacHeader();
       flac = true;
     }
-    else if (!strncmp_P(id, PSTR("ID3"), 3)) {
+    else if (!memcmp_P(id, PSTR("ID3"), 3)) {
       readId3Header(id[3]);
     }
-    else if (!strncmp_P(id, PSTR("OggS"), 4)) {
+    else if (!memcmp_P(id, PSTR("OggS"), 4)) {
       readOggHeader();
+    }
+    else if (!memcmp_P(id, PSTR("\x00\x00\x00\x20"), 4)) {
+      readQtffHeader();
     }
     else if (!memcmp_P(buffer, ASF_Header_Object, GUID)) {
       readAsfHeader();
-    }
-    else if (!memcmp_P(buffer, PSTR("\x0\x0\x0 ftyp"), 8)) {
-      readQtffHeader();
     }
     else {
       seek(0);

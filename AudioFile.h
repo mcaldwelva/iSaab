@@ -70,7 +70,7 @@ const char iTunesFields[] PROGMEM =
   "\xa9""nam"
   "\xa9""alb"
   "\xa9""ART"
-     "a""ART"
+  "\x61""ART"
   "\xa9""gen"
   "\xa9""day";
 
