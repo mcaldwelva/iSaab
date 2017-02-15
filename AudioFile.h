@@ -51,8 +51,8 @@ const char VorbisFields[] PROGMEM =
 const char Id3v23Fields[] PROGMEM = 
   "TIT2"
   "TALB"
-  "TPE1"
   "TPE2"
+  "TPE1"
   "TCON"
   "TYER";
 
@@ -60,8 +60,8 @@ const char Id3v23Fields[] PROGMEM =
 const char Id3v20Fields[] PROGMEM = 
   "TT2"
   "TAL"
-  "TP1"
   "TP2"
+  "TP1"
   "TCO"
   "TYE";
 
