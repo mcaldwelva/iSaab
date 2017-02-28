@@ -9,9 +9,6 @@
 #include <util/atomic.h>
 #include "Player.h"
 
-// guarantees progress through the entire library
-// and next track selected in a few seconds
-#define RANDOM_TRACK (random(path[depth].last - path[depth].first + 509) + path[depth].first)
 
 Player::Player() {
   // initial player state
@@ -42,7 +39,7 @@ void Player::setup() {
   uint32_t seed = 0;
   for (uint8_t i = 0; i < 32; i++) {
     seed <<= 1;
-    seed |= analogRead(8) & 1;
+    seed |= analogRead(0) & 1;
   }
   randomSeed(seed);
 }
@@ -63,10 +60,7 @@ bool Player::begin() {
     }
 
     // initialize card reader
-    if (!SD.begin(SD_CS)) {
-      // this will return an error after the first call
-      // but we need it here so we can change the card
-    }
+    SD.begin(SD_CS);
 
     // open SD root
     path[0].h = SD.open("/");
@@ -155,7 +149,10 @@ void Player::resume() {
 
 
 void Player::shuffle() {
-  shuffled = !shuffled;
+  if (repeatCount == 1) {
+    shuffled = !shuffled;
+  }
+
 #if (DEBUGMODE>=1)
   Serial.print(F("SHUFFLE "));
   Serial.println(shuffled ? F("ON") : F("OFF"));
@@ -170,7 +167,7 @@ void Player::nextTrack() {
 
   if (shuffled) {
     if (next == UNKNOWN) {
-      do { next = RANDOM_TRACK; } while (next == current);
+      do { next = random(path[depth].first, path[depth].last + 500); } while (next == current);
     }
   } else {
       // if no track is queued up
@@ -197,7 +194,7 @@ void Player::prevTrack() {
   } else {
     if (shuffled) {
       if (next == UNKNOWN) {
-        do { next = RANDOM_TRACK; } while (next == current);
+        do { next = random(path[depth].first, path[depth].last + 500); } while (next == current);
       }
     } else {
       // if no track is queued up
@@ -223,13 +220,15 @@ void Player::nextDisc() {
   Serial.println(F("NEXT DISC"));
 #endif
 
-  if (shuffled) {
-    display.tag = (abs(display.tag) + 1) % (AudioFile::MAX_TAG_ID + 1);
-    updateText();
-  } else {
-    if (next == UNKNOWN) {
-      next = path[depth].last;
-      stopTrack();
+  if (repeatCount == 1) {
+    if (shuffled) {
+      display.tag = ((display.tag & 0x7f) + 1) % (AudioFile::MAX_TAG_ID + 1);
+      updateText();
+    } else {
+      if (next == UNKNOWN) {
+        next = path[depth].last;
+        stopTrack();
+      }
     }
   }
 }
@@ -266,17 +265,19 @@ void Player::preset(uint8_t memory) {
   Serial.println(memory, DEC);
 #endif
 
-  if (shuffled) {
-    if (memory == abs(display.tag)) {
-      display.tag = 0;
+  if (repeatCount == 1) {
+    if (shuffled) {
+      if (memory == (display.tag & 0x7f)) {
+        display.tag = 0;
+      } else {
+        display.tag = memory;
+      }
+      updateText();
     } else {
-      display.tag = memory;
-    }
-    updateText();
-  } else {
-    if (next == UNKNOWN) {
-      next = presets[memory - 1];
-      stopTrack();
+      if (next == UNKNOWN) {
+        next = presets[memory - 1];
+        stopTrack();
+      }
     }
   }
 }
@@ -415,7 +416,7 @@ void Player::getStatus(uint8_t data[]) {
 // get text for display
 int Player::getText(char *&buf) {
   int ret = display.text[0] ? display.tag : 0;
-  display.tag = abs(display.tag);
+  display.tag &= 0x7f;
   buf = display.text;
   return ret;
 }
@@ -427,7 +428,7 @@ void Player::updateText() {
   String text;
 
   if (audio && state == Playing) {
-    text = audio.getTag(abs(display.tag) - 1);
+    text = audio.getTag((display.tag & 0x7f) - 1);
   }
 
   ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
@@ -438,7 +439,7 @@ void Player::updateText() {
     for (; i < 23; i++, j++) {
       display.text[i] = text[j];
     }
-    display.tag = -abs(display.tag);
+    display.tag |= 0x80;
   }
 }
 

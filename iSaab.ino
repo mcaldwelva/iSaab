@@ -148,13 +148,13 @@ void controlRequest(CAN::msg &msg) {
       cdc.rewind();
       break;
     case 0x59: // NXT
-      if (msg.data[0] & 0x80) cdc.nextDisc();
+      cdc.nextDisc();
       break;
     case 0x68: // 1 - 6
-      if (msg.data[0] & 0x80) cdc.preset(msg.data[2]);
+      cdc.preset(msg.data[2]);
       break;
     case 0x76: // RDM toggle
-      if (msg.data[0] & 0x80) cdc.shuffle();
+      cdc.shuffle();
       break;
     case 0xb0: // MUTE on
     case 0x14: // deselect CDC
