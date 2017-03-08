@@ -188,22 +188,16 @@ void Player::prevTrack() {
   Serial.println(F("PREVIOUS"));
 #endif
 
-  if (repeatCount == 1 && trackTime()) {
+  if (shuffled || repeatCount == 1 && trackTime()) {
     // start this track over again
     next = current;
   } else {
-    if (shuffled) {
-      if (next == UNKNOWN) {
-        do { next = random(path[depth].first, path[depth].last + 500); } while (next == current);
-      }
+    // if no track is queued up
+    if (next == UNKNOWN) {
+      next = current - 1;
     } else {
-      // if no track is queued up
-      if (next == UNKNOWN) {
-        next = current - 1;
-      } else {
-        // keep skipping
-        next--;
-      }
+      // keep skipping
+      next--;
     }
   }
 
@@ -369,8 +363,10 @@ void Player::getStatus(uint8_t data[]) {
     disc = path[depth].folder;
   }
 
-  // married, random
+  // married
   data[7] = 0xd0;
+
+  // random
   if (shuffled) data[7] |= 0x20;
 
   // seconds
@@ -399,10 +395,11 @@ void Player::getStatus(uint8_t data[]) {
   // full magazine
   data[2] = 0b00111111;
 
-  // changed, ready, reply
-  static uint8_t last[4] = {0x02, 0x01, 0x00, 0x00};
+  // ready
   data[0] = 0x20;
-  
+
+  // reply, changed
+  static uint8_t last[4] = {0x02, 0x01, 0x00, 0x00};
   if (data[1] || memcmp(last, (data + 3), sizeof(last))) {
     if (data[1]) data[0] |= 0x40;
     data[0] |= 0x80;

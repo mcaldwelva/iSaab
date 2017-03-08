@@ -361,7 +361,7 @@ void AudioFile::readQtffHeader() {
     // if we're not in tag list
     if (depth < 4) {
       // determine if this atom is in the path to tags
-      if (!strncmp_P(buffer, (iTunesPath + depth * QTFF_ID), QTFF_ID)) {
+      if (!memcmp_P(buffer, (iTunesPath + depth * QTFF_ID), QTFF_ID)) {
         if (depth++ == 2) {
           // skip 'meta' version info
           read(buffer, 4);
@@ -374,7 +374,7 @@ void AudioFile::readQtffHeader() {
     } else {
       // store it if it's one we care about
       for (uint8_t i = 0; i < MAX_TAG_ID; i++) {
-        if (!strncmp_P(buffer, (iTunesFields + i * QTFF_ID), QTFF_ID)) {
+        if (!memcmp_P(buffer, (iTunesFields + i * QTFF_ID), QTFF_ID)) {
           // skip to 'data' value
           seek(position() + 16);
           uint16_t value_size = next_atom - position();
