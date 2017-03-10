@@ -158,10 +158,12 @@ void controlRequest(CAN::msg &msg) {
       break;
     case 0xb0: // MUTE on
     case 0x14: // deselect CDC
+    case 0x84: // SCAN disc
       cdc.pause();
       break;
     case 0xb1: // MUTE off
     case 0x24: // select CDC
+    case 0x88: // SCAN magazine
       cdc.resume();
       break;
   }
