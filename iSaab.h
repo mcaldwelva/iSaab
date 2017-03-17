@@ -27,18 +27,18 @@
 
 /**
  * CDC display
- * http://pikkupossu.1g.fi/tomi/projects/i-bus/i-bus.html#328
- * http://pikkupossu.1g.fi/tomi/projects/i-bus/i-bus.html#348
+ * http://pikkupossu.1g.fi/tomi/projects/i-bus/i-bus.html#337
+ * http://pikkupossu.1g.fi/tomi/projects/i-bus/i-bus.html#357
  * http://pikkupossu.1g.fi/tomi/projects/i-bus/i-bus.html#368
  */
-#define RX_SID_PRIORITY          0x368
+#define RX_SID_REQUEST           0x368
 #define TX_SID_REQUEST           0x357
 #define TX_SID_TEXT              0x337
 
 
 // only accept these messages
 const uint16_t high_filters[] PROGMEM = {RX_CDC_POWER, RX_CDC_CONTROL, 0x7ff};
-const uint16_t low_filters[] PROGMEM = {RX_SID_PRIORITY, 0x000, 0x000, 0x000, 0x7ff};
+const uint16_t low_filters[] PROGMEM = {RX_SID_REQUEST, 0x000, 0x000, 0x000, 0x7ff};
 
 
 // prototypes

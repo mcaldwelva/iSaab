@@ -42,10 +42,12 @@ void setup() {
 
 // main loop
 void loop() {
+  // shutdown
   ibus.setMode(CAN::McuSleep);
   sleep_mode();
-  ibus.setMode(CAN::Normal);
 
+  // wake up
+  ibus.setMode(CAN::Normal);
   cdc.play();
 }
 
@@ -66,7 +68,7 @@ void processMessage() {
         powerRequest(msg);
         break;
 
-      case RX_SID_PRIORITY:
+      case RX_SID_REQUEST:
         displayRequest(msg);
         break;
     }
@@ -179,9 +181,10 @@ void displayRequest(CAN::msg &msg) {
   char *text;
   int8_t wanted = cdc.getText(text);
 
+  // check row
   if (msg.data[0] == 0x00) {
     if (wanted) {
-      // check display owner
+      // check owner
       switch (msg.data[1]) {
         case 0x12: // iSaab
           // send text
@@ -189,9 +192,11 @@ void displayRequest(CAN::msg &msg) {
           msg.data[1] = 0x96;
 
           for (int8_t id = 5, i = 0; id >= 0; id--) {
+            // sequence id, start of sequence flag
             msg.data[0] = id;
             if (id == 5) msg.data[0] |= 0x40;
 
+            // row id, new text flag
             msg.data[2] = (id < 3) ? 2 : 1;
             if (wanted < 0) msg.data[2] |= 0x80;
 

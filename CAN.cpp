@@ -77,7 +77,7 @@ void CAN::begin(uint16_t speed, const uint16_t high[] PROGMEM, const uint16_t lo
   writeRegister(CNF2, cnf2);
   writeRegister(CNF3, cnf3);
 
-  // only RXB0 activates interrupt
+  // always interrupt on high priority RX
   writeRegister(CANINTE, _BV(RX0IE));
 
   // configure filters
@@ -106,17 +106,13 @@ bool CAN::send(const msg &message) {
     id = 14;
   }
 
-  // calculate TX buffer address & priority
-  uint8_t address = (id & 0x03) * 2;
-  uint8_t priority = id >> 2;
+  // calculate TX buffer address
+  uint8_t address = (id & 0b11) << 1;
 
   // if that buffer isn't available we're done
   if (bit_is_set(status, address + 2)) {
     return false;
   }
-
-  // decrement id, skipping invalid addresses
-  id -= (id % 4) ? 1 : 2;
 
 #ifdef SPI_HAS_TRANSACTION
   SPI.beginTransaction(MCP2515_SPI_SETTING);
@@ -152,22 +148,15 @@ bool CAN::send(const msg &message) {
   SPI.endTransaction();
 #endif
 
-  // select the associated control register
-  uint8_t ctrlreg;
-  switch (address) {
-    case 4:
-      ctrlreg = TXB2CTRL;
-      break;
-    case 2:
-      ctrlreg = TXB1CTRL;
-      break;
-    case 0:
-      ctrlreg = TXB0CTRL;
-      break;
-  }
+  // calculate the control register and priority
+  uint8_t ctrlreg = (address << 3) + TXB0CTRL;
+  uint8_t priority = id >> 2;
 
   // flag the buffer for transmission
   modifyRegister(ctrlreg, _BV(TXREQ) | _BV(TXP1) | _BV(TXP0), _BV(TXREQ) | priority);
+
+  // decrement id, skipping invalid addresses
+  id -= (id % 4) ? 1 : 2;
 
   return true;
 }
@@ -229,15 +218,17 @@ bool CAN::receive(msg &message) {
 
 // change the operating mode of the can chip
 void CAN::setMode(Mode mode) {
-  // enable/disable Wake-on-CAN
   switch (mode) {
     case McuSleep:
+      // disable low priority RX interrupt
       modifyRegister(CANINTE, _BV(RX1IE), 0x00);
       return;
     case Sleep:
+      // enable wake interrupt
       modifyRegister(CANINTE, _BV(WAKIE), 0xff);
       break;
     case Normal:
+      // enable low priority RX and disable wake interrupts
       modifyRegister(CANINTE, _BV(WAKIE) | _BV(RX1IE), _BV(RX1IE));
       modifyRegister(CANINTF, _BV(WAKIF), 0x00);
       break;
