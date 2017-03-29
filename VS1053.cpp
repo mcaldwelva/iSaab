@@ -14,7 +14,7 @@
 
 // setup pins
 void VS1053::setup() {
-  // turn off sound card
+  // turn off coproc
   pinMode(VS1053_XRESET, OUTPUT);
   digitalWrite(VS1053_XRESET, LOW);
   state = Off;
@@ -36,7 +36,7 @@ void VS1053::setup() {
 
 // power on
 bool VS1053::begin() {
-  // turn on sound card
+  // turn on coproc
   state = Powerup;
   digitalWrite(VS1053_XRESET, HIGH);
   while (!readyForData());
@@ -48,20 +48,20 @@ bool VS1053::begin() {
   sciWrite(SCI_CLOCKF, 0xc000);
   while (!readyForData());
 
-  // simple check to see if the card is responding
+  // simple check to see if the coproc is responding
   return sciRead(SCI_STATUS) & 0x40;
 }
 
 
 // power off
 void VS1053::end() {
-  // turn off sound card
+  // turn off coproc
   digitalWrite(VS1053_XRESET, LOW);
   state = Off;
 }
 
 
-// close file
+// stop playback
 void VS1053::stopTrack() {
   // turn down analog
   setVolume(0xfe, 0xfe);
@@ -71,24 +71,24 @@ void VS1053::stopTrack() {
 }
 
 
-// prepare sound card for new file
+// begin playback of new file
 bool VS1053::startTrack() {
   if (!audio) {
     return false;
   }
 
-  // ensure good state
+  // cancel playback to ensure coproc is ready
   {
-    // cancel playback
-    sciWrite(SCI_MODE, SM_SDINEW | SM_CANCEL);
-
     // get codec specific fill byte
     sciWrite(SCI_WRAMADDR, XP_ENDFILLBYTE);
     uint8_t endFillByte = sciRead(SCI_WRAM);
-
-    // send endFillByte until cancel is accepted
     uint8_t buffer[VS1053_BUFFER_SIZE];
     memset(buffer, endFillByte, VS1053_BUFFER_SIZE);
+
+    // send cancel
+    sciWrite(SCI_MODE, SM_SDINEW | SM_CANCEL);
+
+    // send endFillByte until cancel is accepted
     while (sciRead(SCI_MODE) & SM_CANCEL) {
       sendData(buffer, VS1053_BUFFER_SIZE);
     }
@@ -114,7 +114,7 @@ bool VS1053::startTrack() {
 }
 
 
-// transfer music to the sound card
+// play to end of file
 void VS1053::playTrack() {
   // send data until the track is closed
   while (audio) {
@@ -134,7 +134,7 @@ void VS1053::playTrack() {
 
 // skip the specified number of seconds
 void VS1053::skip(int16_t secs) {
-  // check if the card will let us jump now
+  // check if the coproc can skip now
   if (sciRead(SCI_STATUS) & SS_DO_NOT_JUMP) {
     return;
   }
@@ -210,10 +210,10 @@ bool VS1053::loadPlugin(const __FlashStringHelper* fileName) {
 }
 
 
-// send data to the sound card
+// send data to the coproc
 void VS1053::sendData(uint8_t data[], uint16_t len) {
   while (len > 0) {
-    uint8_t siz = len > 32 ? 32 : len;
+    uint8_t siz = len > VS1053_BUFFER_SIZE ? VS1053_BUFFER_SIZE : len;
     while (!readyForData()) {
       if (state == Off) return;
     }
@@ -289,7 +289,7 @@ void VS1053::sciWrite(uint8_t addr, uint16_t data) {
 }
 
 
-// check if sound card can take data
+// check if coproc can take data
 inline __attribute__((always_inline))
 bool VS1053::readyForData() {
   return fastDigitalRead(VS1053_XDREQ);

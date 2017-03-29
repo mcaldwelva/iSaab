@@ -80,16 +80,16 @@ void CAN::begin(uint16_t speed, const uint16_t high[] PROGMEM, const uint16_t lo
   // always interrupt on high priority RX
   writeRegister(CANINTE, _BV(RX0IE));
 
-  // configure filters
-  setFilters(high, low);
-
   // allow rollover from RXB0 to RXB1
   modifyRegister(RXB0CTRL, _BV(BUKT), 0xff);
 
 #if (DEBUGMODE>=1)
-  // light up the corresponding LED when a buffer is occupied
+  // light up the corresponding LED when an RX buffer is occupied
   writeRegister(BFPCTRL, _BV(B1BFE) | _BV(B1BFM) | _BV(B0BFE) | _BV(B0BFM));
 #endif
+
+  // configure filters
+  setFilters(high, low);
 
   // standard operating mode
   setMode(Normal);

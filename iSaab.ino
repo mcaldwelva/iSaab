@@ -232,7 +232,7 @@ void displayRequest(CAN::msg &msg) {
     msg.id = TX_SID_REQUEST;
     msg.data[0] = 0x1f; // device
     msg.data[1] = 0x00; // row
-    msg.data[3] = 0x12; // priority
+    msg.data[3] = 0x12; // iSaab
     msg.data[4] = 0x00;
     msg.data[5] = 0x00;
     msg.data[6] = 0x00;
