@@ -213,7 +213,7 @@ bool VS1053::loadPlugin(const __FlashStringHelper* fileName) {
 // send data to the coproc
 void VS1053::sendData(uint8_t data[], uint16_t len) {
   while (len > 0) {
-    uint8_t siz = len > VS1053_BUFFER_SIZE ? VS1053_BUFFER_SIZE : len;
+    uint8_t chunk = min(VS1053_BUFFER_SIZE, len);
     while (!readyForData()) {
       if (state == Off) return;
     }
@@ -223,7 +223,7 @@ void VS1053::sendData(uint8_t data[], uint16_t len) {
 #endif
     fastDigitalWrite(VS1053_XDCS, LOW);
 
-    for (uint8_t i = 0; i < siz; i++) {
+    for (uint8_t i = 0; i < chunk; i++) {
       spiwrite(*data++);
     }
 
@@ -231,7 +231,7 @@ void VS1053::sendData(uint8_t data[], uint16_t len) {
 #ifdef SPI_HAS_TRANSACTION
     SPI.endTransaction();
 #endif
-    len -= siz;
+    len -= chunk;
   }
 }
 

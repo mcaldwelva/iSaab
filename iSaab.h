@@ -40,11 +40,4 @@
 const uint16_t high_filters[] PROGMEM = {RX_CDC_POWER, RX_CDC_CONTROL, 0x7ff};
 const uint16_t low_filters[] PROGMEM = {RX_SID_REQUEST, 0x000, 0x000, 0x000, 0x7ff};
 
-
-// prototypes
-void processMessage();
-void powerRequest(CAN::msg &);
-void controlRequest(CAN::msg &);
-void displayRequest(CAN::msg &);
-
 #endif // iSaab_H
