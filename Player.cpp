@@ -390,7 +390,7 @@ void Player::getStatus(uint8_t data[]) {
   data[3] = state & 0xf0;
 
   // disc
-  data[3] |= disc % 9 + 1;
+  data[3] |= disc % 6 + 1;
 
   // full magazine
   data[2] = 0b00111111;
