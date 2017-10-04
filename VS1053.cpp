@@ -81,16 +81,16 @@ bool VS1053::startTrack() {
   {
     // always use 0 for endFillByte
     uint8_t buffer[VS1053_BUFFER_SIZE];
-    memset(buffer, 0, VS1053_BUFFER_SIZE);
+    memset(buffer, 0x00, VS1053_BUFFER_SIZE);
 
     // send cancel
     sciWrite(SCI_MODE, SM_SDINEW | SM_CANCEL);
 
     // send endFillByte until cancel is accepted
     uint16_t count = 0;
-    do {
+    while (sciRead(SCI_HDAT1) && count++ < 768) {
       sendData(buffer, VS1053_BUFFER_SIZE);
-    } while ((sciRead(SCI_MODE) & SM_CANCEL) && count++ < 768);
+    }
   }
 
   // reset decode time
