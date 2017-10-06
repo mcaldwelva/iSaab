@@ -77,8 +77,9 @@ bool VS1053::startTrack() {
     return false;
   }
 
-  // cancel playback to ensure coproc is ready
-  {
+  // cancel playback twice to ensure coproc is ready
+  uint8_t cancelCounter = 0;
+  do {
     // get codec specific fill byte
     sciWrite(SCI_WRAMADDR, XP_ENDFILLBYTE);
     uint8_t endFillByte = sciRead(SCI_WRAM);
@@ -88,13 +89,12 @@ bool VS1053::startTrack() {
     // send cancel
     sciWrite(SCI_MODE, SM_SDINEW | SM_CANCEL);
 
-    // ensure buffer is completely flushed
-    uint16_t count = 0;
+    // send endFillByte until cancel is accepted
+    uint16_t flushCounter = 0;
     do {
       sendData(buffer, VS1053_BUFFER_SIZE);
-      count++;
-    } while ((count < 384 || sciRead(SCI_HDAT1) || sciRead(SCI_MODE) & SM_CANCEL) && (count < 768));
-  }
+    } while ((sciRead(SCI_MODE) & SM_CANCEL) && (flushCounter++ < 384));
+  } while (cancelCounter++ < 2);
 
   // reset decode time
   skippedTime = 0;
