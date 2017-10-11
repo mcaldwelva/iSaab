@@ -217,6 +217,9 @@ bool CAN::receive(msg &message) {
 
 // change the operating mode of the can chip
 void CAN::setMode(Mode mode) {
+  // set transceiver mode
+  modifyRegister(BFPCTRL, _BV(B1BFS), mode ? _BV(B1BFS) : 0x00);
+
   switch (mode) {
     case McuSleep:
       // disable low priority RX interrupt
@@ -235,9 +238,6 @@ void CAN::setMode(Mode mode) {
 
   // set controller mode
   modifyRegister(CANCTRL, _BV(REQOP2) | _BV(REQOP1) | _BV(REQOP0), mode);
-
-  // set transceiver mode
-  modifyRegister(BFPCTRL, _BV(B1BFS), mode ? _BV(B1BFS) : 0x00);
 
   // wait until controller mode has been changed
   while ((readRegister(CANSTAT) & (_BV(REQOP2) | _BV(REQOP1) | _BV(REQOP0))) != mode);
