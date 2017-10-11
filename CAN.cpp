@@ -17,6 +17,7 @@
  *   3. simplified public interface
  *
  *  10/12/2016 Mike C. - Fixed clearing Rx buffers
+ *  10/06/2017 Mike C. - Use RX1BF to manage transceiver
  */
 
 #include <SPI.h>
@@ -83,10 +84,8 @@ void CAN::begin(uint16_t speed, const uint16_t high[] PROGMEM, const uint16_t lo
   // allow rollover from RXB0 to RXB1
   modifyRegister(RXB0CTRL, _BV(BUKT), 0xff);
 
-#if (DEBUGMODE>=1)
-  // light up the corresponding LED when an RX buffer is occupied
-  writeRegister(BFPCTRL, _BV(B1BFE) | _BV(B1BFM) | _BV(B0BFE) | _BV(B0BFM));
-#endif
+  // set RX1BF to put transceiver in standby mode
+  writeRegister(BFPCTRL, _BV(B1BFS) | _BV(B1BFE));
 
   // configure filters
   setFilters(high, low);
@@ -225,7 +224,7 @@ void CAN::setMode(Mode mode) {
       return;
     case Sleep:
       // enable wake interrupt
-      modifyRegister(CANINTE, _BV(WAKIE), 0xff);
+      modifyRegister(CANINTE, _BV(WAKIE), _BV(WAKIE));
       break;
     case Normal:
       // enable low priority RX and disable wake interrupts
@@ -234,10 +233,13 @@ void CAN::setMode(Mode mode) {
       break;
   }
 
-  // set the new mode
+  // set controller mode
   modifyRegister(CANCTRL, _BV(REQOP2) | _BV(REQOP1) | _BV(REQOP0), mode);
 
-  // wait until the mode has been changed
+  // set transceiver mode
+  modifyRegister(BFPCTRL, _BV(B1BFS), mode ? _BV(B1BFS) : 0x00);
+
+  // wait until controller mode has been changed
   while ((readRegister(CANSTAT) & (_BV(REQOP2) | _BV(REQOP1) | _BV(REQOP0))) != mode);
 }
 
