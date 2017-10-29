@@ -42,19 +42,19 @@ void setup() {
 
 // main loop
 void loop() {
-  // shutdown
-  ibus.setMode(CAN::McuSleep);
   sleep_mode();
-
-  // wake up
-  ibus.setMode(CAN::Normal);
   cdc.play();
 }
 
 
 // interrupt handler for incoming message
 void processMessage() {
+  static uint8_t gap = 0;
   CAN::msg msg;
+
+  if (gap >= 6) {
+    ibus.setMode(CAN::Normal);
+  }
 
   // if there's a message available
   if (ibus.receive(msg)) {
@@ -62,16 +62,23 @@ void processMessage() {
     switch (msg.id) {
       case RX_CDC_CONTROL:
         controlRequest(msg);
+        gap = 0;
         break;
 
       case RX_CDC_POWER:
         powerRequest(msg);
+        gap = 0;
         break;
 
       case RX_SID_REQUEST:
         displayRequest(msg);
+        gap++;
         break;
     }
+  }
+
+  if (gap >= 6) {
+    ibus.setMode(CAN::McuSleep);
   }
 }
 

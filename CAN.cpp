@@ -9,7 +9,7 @@
  *   2. Use Arduino pin macros for portability and readability
  *   3. Code simplification, C++ style pass by reference
  *   4. Removed global vars and buffer implementation to save memory
- *   5. Added Wake-on-CAN and toggle both LED's
+ *   5. Added Wake-on-CAN
  *
  *  03/04/2016 Mike C. - More changes:
  *   1. send: guarantees transmission order of up to 12 consecutive messages
@@ -17,7 +17,7 @@
  *   3. simplified public interface
  *
  *  10/12/2016 Mike C. - Fixed clearing Rx buffers
- *  10/06/2017 Mike C. - Use RX1BF to manage transceiver
+ *  10/06/2017 Mike C. - Use RX1BF to manage transceiver and RX0BF as indicator
  */
 
 #include <SPI.h>
@@ -56,7 +56,7 @@ void CAN::begin(uint16_t speed, const uint16_t high[] PROGMEM, const uint16_t lo
   switch (speed) {
     case 47:
       // http://www.microchip.com/forums/m/tm.aspx?m=236967&p=2
-      cnf1 = 0xc7; cnf2 = 0xbe; cnf3 = 0x44;
+      cnf1 = 0xc7; cnf2 = 0xbe; cnf3 = 0x04;
       break;
     case 500:
       cnf1 = 0x01; cnf2 = 0x90; cnf3 = 0x02;
@@ -82,10 +82,10 @@ void CAN::begin(uint16_t speed, const uint16_t high[] PROGMEM, const uint16_t lo
   writeRegister(CANINTE, _BV(RX0IE));
 
   // allow rollover from RXB0 to RXB1
-  modifyRegister(RXB0CTRL, _BV(BUKT), 0xff);
+  modifyRegister(RXB0CTRL, _BV(BUKT), _BV(BUKT));
 
-  // set RX1BF to put transceiver in standby mode
-  writeRegister(BFPCTRL, _BV(B1BFS) | _BV(B1BFE));
+  // enable RXnBF registers for output
+  writeRegister(BFPCTRL, _BV(B1BFE) | _BV(B0BFE));
 
   // configure filters
   setFilters(high, low);
@@ -217,22 +217,27 @@ bool CAN::receive(msg &message) {
 
 // change the operating mode of the can chip
 void CAN::setMode(Mode mode) {
+  // wait for TX to complete
+  while (readStatus(SPI_READ_STATUS) & 0b01010100);
+
   // set transceiver mode
-  modifyRegister(BFPCTRL, _BV(B1BFS), mode ? _BV(B1BFS) : 0x00);
+  modifyRegister(BFPCTRL, _BV(B1BFS) | _BV(B0BFS), mode == Normal ? 0x00 : _BV(B1BFS) | _BV(B0BFS));
 
   switch (mode) {
-    case McuSleep:
-      // disable low priority RX interrupt
-      modifyRegister(CANINTE, _BV(RX1IE), 0x00);
-      return;
-    case Sleep:
-      // enable wake interrupt
-      modifyRegister(CANINTE, _BV(WAKIE), _BV(WAKIE));
-      break;
     case Normal:
       // enable low priority RX and disable wake interrupts
       modifyRegister(CANINTE, _BV(WAKIE) | _BV(RX1IE), _BV(RX1IE));
       modifyRegister(CANINTF, _BV(WAKIF), 0x00);
+      break;
+
+    case McuSleep:
+      // disable low priority RX interrupt
+      modifyRegister(CANINTE, _BV(RX1IE), 0x00);
+      return;
+
+    case Sleep:
+      // enable wake interrupt
+      modifyRegister(CANINTE, _BV(WAKIE), _BV(WAKIE));
       break;
   }
 

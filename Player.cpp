@@ -231,7 +231,7 @@ void Player::nextDisc() {
 // read presets from file
 void Player::readPresets(const __FlashStringHelper* fileName) {
   // clear existing presets
-  memset(presets, 0, sizeof(current) * NUM_PRESETS);
+  memset(presets, 0, sizeof(presets));
 
   // open the file
   File file = SD.open(fileName);
