@@ -52,7 +52,7 @@ void processMessage() {
   static uint8_t gap = 0;
   CAN::msg msg;
 
-  if (gap >= 6) {
+  if (gap >= 9) {
     ibus.setMode(CAN::Normal);
   }
 
@@ -77,7 +77,7 @@ void processMessage() {
     }
   }
 
-  if (gap >= 6) {
+  if (gap >= 9) {
     ibus.setMode(CAN::McuSleep);
   }
 }
