@@ -125,7 +125,7 @@ void AudioFile::readVorbisComments() {
   tag_count = LE8x4(buffer);
 
   // search through tags
-  while (tag_count-- > 0) {
+  while (tag_count-- > 0 && this) {
     // read field size
     read(buffer, 4);
     tag_size = LE8x4(buffer);
@@ -161,7 +161,7 @@ int AudioFile::readFlacHeader() {
   // read metablocks
   do {
     // block header
-    if (read(buffer, 4) == -1) break;
+    read(buffer, 4);
     block_type = buffer[0] & 0x7F;
     last_block = buffer[0] & 0x80;
     block_size = BE8x3((buffer + 1));
@@ -181,7 +181,7 @@ int AudioFile::readFlacHeader() {
         seek(position() + block_size);
         break;
     }
-  } while (!last_block);
+  } while (!last_block && this);
 
   return 0;
 }
@@ -235,7 +235,7 @@ void AudioFile::readAsfHeader() {
   read(buffer, 2);
 
   // for each object
-  while (object_count-- > 0) {
+  while (object_count-- > 0 && this) {
     uint32_t next_object;
 
     read(buffer, GUID);
