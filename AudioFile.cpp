@@ -192,7 +192,7 @@ void AudioFile::readOggHeader() {
   uint16_t seg_size;
 
   // skip header info
-  seek(position() + 22);
+  seek(26);
 
   // size of segment table
   seg_count = read();

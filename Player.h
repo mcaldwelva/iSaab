@@ -11,7 +11,6 @@
 #include <SD.h>
 #include "VS1053.h"
 
-#define DEBUGMODE     0
 #define SD_CS         4    // SD card SPI select pin (output)
 #define NUM_PRESETS   6
 
@@ -60,7 +59,6 @@ class Player : private VS1053
     } display;
 
     // filesystem stuff
-    void dumpPath();
     struct {
       File h;
       uint16_t folder;

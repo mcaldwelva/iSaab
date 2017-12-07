@@ -287,6 +287,7 @@ class CAN {
     bool available() { return !fastDigitalRead(MCP2515_IRQ); };
     uint8_t getSendErrors() { return readRegister(TEC); }
     uint8_t getReceiveErrors() { return readRegister(REC); }
+    uint8_t getErrorFlags() { return readRegister(EFLG); }
 
     enum Mode : uint8_t { Normal = 0x00, McuSleep = 0x10, Sleep = 0x20, Loopback = 0x40, ListenOnly = 0x60, Config = 0x80 };
     void setMode(Mode mode);
