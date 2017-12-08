@@ -195,7 +195,7 @@ void displayRequest(CAN::msg &msg) {
     uint8_t rec = ibus.getReceiveErrors();
     uint8_t eflg = ibus.getErrorFlags();
 
-    if (tec || rec || eflg) {
+    if (wanted == 13 || tec || rec || eflg) {
       text[0]  = 'T';
       text[1]  = 'E';
       text[2]  = 'C';
@@ -219,7 +219,7 @@ void displayRequest(CAN::msg &msg) {
       text[20] = eflg & _BV(2) ? 't' : ' ';
       text[21] = eflg & _BV(1) ? 'r' : ' ';
       text[22] = eflg & _BV(0) ? 'e' : ' ';
-      wanted = 13;
+      text[23] = wanted = 13;
     }
 #endif
 
