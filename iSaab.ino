@@ -191,38 +191,36 @@ void displayRequest(CAN::msg &msg) {
   // check row
   if (msg.data[0] == 0x00) {
 #if (DEBUGMODE>=1)
-  uint8_t tec = ibus.getSendErrors();
-  uint8_t rec = ibus.getReceiveErrors();
-
-  if (wanted == 13 || tec || rec) {
-    text[0]  = 'T';
-    text[1]  = 'E';
-    text[2]  = 'C';
-    text[5]  = (tec % 10) + '0'; tec /= 10;
-    text[4]  = (tec % 10) + '0'; tec /= 10;
-    text[3]  = (tec % 10) + '0';
-    text[6]  = 'R';
-    text[7]  = 'E';
-    text[8]  = 'C';
-    text[11] = (rec % 10) + '0'; rec /= 10;
-    text[10] = (rec % 10) + '0'; rec /= 10;
-    text[9]  = (rec % 10) + '0';
-
+    uint8_t tec = ibus.getSendErrors();
+    uint8_t rec = ibus.getReceiveErrors();
     uint8_t eflg = ibus.getErrorFlags();
-    text[12] = 'O';
-    text[13] = eflg & _BV(7) ? '1' : ' ';
-    text[14] = eflg & _BV(6) ? '0' : ' ';
-    text[15] = 'E';
-    text[16] = eflg & _BV(5) ? 'b' : ' ';
-    text[17] = eflg & _BV(4) ? 't' : ' ';
-    text[18] = eflg & _BV(3) ? 'r' : ' ';
-    text[19] = 'W';
-    text[20] = eflg & _BV(2) ? 't' : ' ';
-    text[21] = eflg & _BV(1) ? 'r' : ' ';
-    text[22] = eflg & _BV(0) ? 'e' : ' ';
 
-    text[23] = wanted = 13;
-  }
+    if (tec || rec || eflg) {
+      text[0]  = 'T';
+      text[1]  = 'E';
+      text[2]  = 'C';
+      text[5]  = (tec % 10) + '0'; tec /= 10;
+      text[4]  = (tec % 10) + '0'; tec /= 10;
+      text[3]  = (tec % 10) + '0';
+      text[6]  = 'R';
+      text[7]  = 'E';
+      text[8]  = 'C';
+      text[11] = (rec % 10) + '0'; rec /= 10;
+      text[10] = (rec % 10) + '0'; rec /= 10;
+      text[9]  = (rec % 10) + '0';
+      text[12] = 'O';
+      text[13] = eflg & _BV(7) ? '1' : ' ';
+      text[14] = eflg & _BV(6) ? '0' : ' ';
+      text[15] = 'E';
+      text[16] = eflg & _BV(5) ? 'b' : ' ';
+      text[17] = eflg & _BV(4) ? 't' : ' ';
+      text[18] = eflg & _BV(3) ? 'r' : ' ';
+      text[19] = 'W';
+      text[20] = eflg & _BV(2) ? 't' : ' ';
+      text[21] = eflg & _BV(1) ? 'r' : ' ';
+      text[22] = eflg & _BV(0) ? 'e' : ' ';
+      wanted = 13;
+    }
 #endif
 
     if (wanted) {
