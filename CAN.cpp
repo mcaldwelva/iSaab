@@ -217,25 +217,28 @@ bool CAN::receive(msg &message) {
 
 // change the operating mode of the can chip
 void CAN::setMode(Mode mode) {
-  // wait for TX to complete
-  while (readStatus(SPI_READ_STATUS) & 0b01010100);
-
-  // set transceiver mode
-  modifyRegister(BFPCTRL, _BV(B1BFS) | _BV(B0BFS), mode == Normal ? 0x00 : _BV(B1BFS) | _BV(B0BFS));
-
   switch (mode) {
     case Normal:
+      // transceiver on
+      modifyRegister(BFPCTRL, _BV(B1BFS) | _BV(B0BFS), 0x00);
+
       // enable low priority RX and disable wake interrupts
       modifyRegister(CANINTE, _BV(WAKIE) | _BV(RX1IE), _BV(RX1IE));
       modifyRegister(CANINTF, _BV(WAKIF), 0x00);
       break;
 
-    case McuSleep:
+    case ListenOnly:
+      // transceiver standby
+      modifyRegister(BFPCTRL, _BV(B1BFS) | _BV(B0BFS), _BV(B1BFS) | _BV(B0BFS));
+
       // disable low priority RX interrupt
       modifyRegister(CANINTE, _BV(RX1IE), 0x00);
-      return;
+      break;
 
     case Sleep:
+      // transceiver standby
+      modifyRegister(BFPCTRL, _BV(B1BFS) | _BV(B0BFS), _BV(B1BFS) | _BV(B0BFS));
+
       // enable wake interrupt
       modifyRegister(CANINTE, _BV(WAKIE), _BV(WAKIE));
       break;

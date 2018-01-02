@@ -78,7 +78,7 @@ void processMessage() {
   }
 
   if (gap >= 9) {
-    ibus.setMode(CAN::McuSleep);
+    ibus.setMode(CAN::ListenOnly);
   }
 }
 
