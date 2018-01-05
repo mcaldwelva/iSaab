@@ -1,6 +1,6 @@
 diff -ru ./SD/src/SD.cpp ~/SD/src/SD.cpp
---- ./SD/src/SD.cpp	2016-03-09 10:11:12.000000000 -0500
-+++ ~/SD/src/SD.cpp	2016-04-01 22:07:43.049546200 -0400
+--- ./SD/src/SD.cpp	2018-01-05 17:40:31.798859500 -0500
++++ ~/SD/src/SD.cpp	2018-01-05 17:31:05.570433000 -0500
 @@ -342,7 +342,8 @@
      Return true if initialization succeeds, false otherwise.
  
@@ -11,9 +11,21 @@ diff -ru ./SD/src/SD.cpp ~/SD/src/SD.cpp
           volume.init(card) &&
           root.openRoot(volume);
  }
+diff -ru ./SD/src/utility/FatStructs.h ~/SD/src/utility/FatStructs.h
+--- ./SD/src/utility/FatStructs.h	2017-01-05 11:00:14.000000000 -0500
++++ ~/SD/src/utility/FatStructs.h	2018-01-05 17:12:33.359708700 -0500
+@@ -402,7 +402,7 @@
+   return (dir->attributes & DIR_ATT_LONG_NAME_MASK) == DIR_ATT_LONG_NAME;
+ }
+ /** Mask for file/subdirectory tests */
+-uint8_t const DIR_ATT_FILE_TYPE_MASK = (DIR_ATT_VOLUME_ID | DIR_ATT_DIRECTORY);
++uint8_t const DIR_ATT_FILE_TYPE_MASK = (DIR_ATT_VOLUME_ID | DIR_ATT_DIRECTORY | DIR_ATT_SYSTEM | DIR_ATT_HIDDEN);
+ /** Directory entry is for a file */
+ static inline uint8_t DIR_IS_FILE(const dir_t* dir) {
+   return (dir->attributes & DIR_ATT_FILE_TYPE_MASK) == 0;
 diff -ru ./SD/src/utility/SdFile.cpp ~/SD/src/utility/SdFile.cpp
---- ./SD/src/utility/SdFile.cpp	2016-03-09 10:11:12.000000000 -0500
-+++ ~/SD/src/utility/SdFile.cpp	2016-03-09 19:09:00.570848200 -0500
+--- ./SD/src/utility/SdFile.cpp	2017-01-05 11:00:14.000000000 -0500
++++ ~/SD/src/utility/SdFile.cpp	2018-01-05 17:13:19.845842500 -0500
 @@ -268,7 +268,7 @@
        while ((b = *p++)) if (b == c) return false;
  #endif
