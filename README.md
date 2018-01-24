@@ -13,7 +13,7 @@ This is built on the [BlueSaab 3.5mm module](http://bluesaab.blogspot.com/2014/0
 
 * [ICs, caps, resistors, etc.](https://www.mouser.com/ProjectManager/ProjectDetail.aspx?AccessID=112dd4f257)
 
-* [TE 827229-1 connector](https://www.mouser.com/ProductDetail/TE-Connectivity/827229-1)
+* [TE 827229-1 connector](https://www.connectorpeople.com/Connector/TYCO-AMP-TE_CONNECTIVITY/8/827229-1)
 
 * [Geeetech VS1053 breakout board](https://www.amazon.com/Geeetech-VS1053-breakout-board-card/dp/B0755PQCPS)
 
