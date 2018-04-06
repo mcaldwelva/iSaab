@@ -228,9 +228,6 @@ void CAN::setMode(Mode mode) {
       break;
 
     case ListenOnly:
-      // transceiver standby
-      modifyRegister(BFPCTRL, _BV(B1BFS) | _BV(B0BFS), _BV(B1BFS) | _BV(B0BFS));
-
       // disable low priority RX interrupt
       modifyRegister(CANINTE, _BV(RX1IE), 0x00);
       break;
@@ -249,6 +246,11 @@ void CAN::setMode(Mode mode) {
 
   // wait until controller mode has been changed
   while ((readRegister(CANSTAT) & (_BV(REQOP2) | _BV(REQOP1) | _BV(REQOP0))) != mode);
+
+  if (mode != Normal) {
+    // transceiver standby
+    modifyRegister(BFPCTRL, _BV(B1BFS) | _BV(B0BFS), _BV(B1BFS) | _BV(B0BFS));
+  }
 }
 
 

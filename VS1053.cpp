@@ -48,8 +48,14 @@ bool VS1053::begin() {
   sciWrite(SCI_CLOCKF, 0xc000);
   while (!readyForData());
 
-  // simple check to see if the coproc is responding
-  return sciRead(SCI_STATUS) & 0x40;
+  // get status
+  uint16_t status = sciRead(SCI_STATUS);
+
+  // max swing
+  sciWrite(SCI_STATUS, status | 0x2101);
+
+  // check if coproc is ready
+  return status & 0x40;
 }
 
 
@@ -93,7 +99,7 @@ bool VS1053::startTrack() {
     uint16_t flushCounter = 0;
     do {
       sendData(buffer, VS1053_BUFFER_SIZE);
-    } while ((sciRead(SCI_MODE) & SM_CANCEL) && (flushCounter++ < 384));
+    } while ((flushCounter++ < 384) && (sciRead(SCI_MODE) & SM_CANCEL));
   } while (cancelCounter++ < 2);
 
   // reset decode time

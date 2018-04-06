@@ -11,13 +11,11 @@ This is built on the [BlueSaab 3.5mm module](http://bluesaab.blogspot.com/2014/0
 
 * [BlueSaab 3.5mm board](https://oshpark.com/shared_projects/uMyNRBbZ)
 
-* [ICs, caps, resistors, etc.](https://www.mouser.com/ProjectManager/ProjectDetail.aspx?AccessID=112dd4f257)
+* [ICs, caps, resistors, etc.](https://www.mouser.com/ProjectManager/ProjectDetail.aspx?AccessID=5A5DA965B5)
 
 * [TE 827229-1 connector](https://www.connectorpeople.com/Connector/TYCO-AMP-TE_CONNECTIVITY/8/827229-1)
 
 * [Geeetech VS1053 breakout board](https://www.amazon.com/Geeetech-VS1053-breakout-board-card/dp/B0755PQCPS)
-
-* [3.5mm stereo right-angle plug](https://www.amazon.com/3-5mm-Stereo-Right-Angle-Plug/dp/B004GIKSN6)
 
 * FTDI cable
 
@@ -28,8 +26,8 @@ Cut the ribbon cable and strip the even wires (only the bottom row is used) so t
 
 | VS1053 Pin | AVR Pin | Ribbon Pin |
 | ----------:|:------- | ---------- |
-| 5V         | 7       | 2 |
-| GND        | 8       | 4 |
+| 5V         | 20      | 2 |
+| GND        | 22      | 4 |
 | CARDCS     | 6 (D4)  | 6 |
 | MISO       | 18      | 8 |
 | MOSI       | 17      | 10 |
