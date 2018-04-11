@@ -46,16 +46,14 @@ bool VS1053::begin() {
 
   // set internal speed, SC_MULT=4.5x, SC_ADD=0.0x
   sciWrite(SCI_CLOCKF, 0xc000);
-  while (!readyForData());
 
-  // get status
-  uint16_t status = sciRead(SCI_STATUS);
+  // wait until ready
+  while (!readyForData() && sciRead(SCI_STATUS) != 0x40);
 
   // max swing
-  sciWrite(SCI_STATUS, status | 0x2101);
+  sciWrite(SCI_STATUS, 0x2141);
 
-  // check if coproc is ready
-  return status & 0x40;
+  return true;
 }
 
 
