@@ -46,12 +46,10 @@ void Player::setup() {
 
 
 // start-up player
-bool Player::begin() {
+void Player::begin() {
   if (state == Off) {
     // turn on sound card
-    if (!VS1053::begin()) {
-      return false;
-    }
+    VS1053::begin();
 
     // initialize card reader
     SD.begin(SD_CS);
@@ -68,8 +66,6 @@ bool Player::begin() {
 
     state = Playing;
   }
-
-  return true;
 }
 
 

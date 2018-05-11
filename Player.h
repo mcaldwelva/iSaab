@@ -23,7 +23,7 @@ class Player : private VS1053
   public:
     Player();
     void setup();
-    bool begin();
+    void begin();
     void end();
 
     void play();

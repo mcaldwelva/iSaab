@@ -35,7 +35,7 @@ void VS1053::setup() {
 
 
 // power on
-bool VS1053::begin() {
+void VS1053::begin() {
   // turn on coproc
   state = Powerup;
   digitalWrite(VS1053_XRESET, HIGH);
@@ -52,8 +52,6 @@ bool VS1053::begin() {
 
   // max swing
   sciWrite(SCI_STATUS, 0x2141);
-
-  return true;
 }
 
 

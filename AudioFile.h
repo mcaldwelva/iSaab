@@ -30,7 +30,7 @@ class AudioFile : public File
     String tags[MAX_TAG_ID];
 
     void updateTag(uint8_t tag, char src[], uint8_t ssize);
-    void readId3Header(uint8_t ver);
+    void readId3Header();
     void readVorbisComments();
     int readFlacHeader();
     void readOggHeader();

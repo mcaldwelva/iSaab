@@ -75,7 +75,7 @@
 class VS1053 {
   public:
     void setup();
-    bool begin();
+    void begin();
     void end();
 
     bool startTrack();

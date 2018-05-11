@@ -51,16 +51,20 @@ void AudioFile::updateTag(uint8_t tag, char src[], uint8_t ssize) {
 }
 
 
-void AudioFile::readId3Header(uint8_t ver) {
+void AudioFile::readId3Header() {
   char buffer[TAG_BUFFER];
   uint32_t header_end;
   char tag[4];
   uint32_t tag_size;
 
-  // skip minor version & extended header info
+  // major version
+  seek(3);
+  uint8_t ver = read();
+
+  // minor version and flags
   read(buffer, 2);
 
-  // get header size
+  // header size
   read(buffer, 4);
   header_end = position() + BE7x4(buffer);
 
@@ -115,12 +119,12 @@ void AudioFile::readVorbisComments() {
   uint32_t tag_count;
   uint32_t tag_size;
 
-  // skip vendor comments
+  // vendor comments
   read(buffer, 4);
   tag_size = LE8x4(buffer);
   seek(position() + tag_size);
 
-  // get number of tags
+  // number of tags
   read(buffer, 4);
   tag_count = LE8x4(buffer);
 
@@ -406,28 +410,30 @@ int AudioFile::readHeader(uint8_t *&buf) {
 
   if (position() == 0) {
     // beginning of header
-    char id[4];
-    read(id, 4);
+    read();
 
     // look for supported magic numbers
-    if (!memcmp_P(id, PSTR("fLaC"), 4)) {
-      siz = readFlacHeader();
-      flac = true;
-    }
-    else if (!memcmp_P(id, PSTR("ID3"), 3)) {
-      readId3Header(id[3]);
-    }
-    else if (!memcmp_P(id, PSTR("OggS"), 4)) {
-      readOggHeader();
-    }
-    else if (!memcmp_P(id, PSTR("\x00\x00\x00\x20"), 4)) {
-      readQtffHeader();
-    }
-    else if (!memcmp_P(buffer, ASF_Header_Object, GUID)) {
-      readAsfHeader();
-    }
-    else {
-      seek(0);
+    switch(BE8x4(buffer)) {
+      case 0x664c6143:
+        seek(4);
+        siz = readFlacHeader();
+        flac = true;
+        break;
+      case 0x4f676753:
+        readOggHeader();
+        break;
+      case 0x3026b275:
+        readAsfHeader();
+        break;
+      case 0x00000020:
+        readQtffHeader();
+        break;
+      default:
+        if (BE8x3(buffer) == 0x494433) {
+          readId3Header();
+        } else {
+          seek(0);
+        }
     }
   }  else {
     // continuing header
