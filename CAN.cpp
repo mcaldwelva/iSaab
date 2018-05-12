@@ -233,9 +233,6 @@ void CAN::setMode(Mode mode) {
       break;
 
     case Sleep:
-      // transceiver standby
-      modifyRegister(BFPCTRL, _BV(B1BFS) | _BV(B0BFS), _BV(B1BFS) | _BV(B0BFS));
-
       // enable wake interrupt
       modifyRegister(CANINTE, _BV(WAKIE), _BV(WAKIE));
       break;
