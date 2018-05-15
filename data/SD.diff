@@ -1,6 +1,6 @@
 diff -ru ./SD/src/SD.cpp ~/SD/src/SD.cpp
 --- ./SD/src/SD.cpp	2017-01-05 11:00:14.000000000 -0500
-+++ ~/SD/src/SD.cpp	2018-05-14 21:50:51.449720400 -0400
++++ ~/SD/src/SD.cpp	2018-05-15 11:11:41.191536900 -0500
 @@ -342,7 +342,8 @@
      Return true if initialization succeeds, false otherwise.
  
@@ -13,27 +13,18 @@ diff -ru ./SD/src/SD.cpp ~/SD/src/SD.cpp
  }
 diff -ru ./SD/src/utility/FatStructs.h ~/SD/src/utility/FatStructs.h
 --- ./SD/src/utility/FatStructs.h	2017-01-05 11:00:14.000000000 -0500
-+++ ~/SD/src/utility/FatStructs.h	2018-05-14 21:46:32.844145100 -0400
-@@ -402,7 +402,7 @@
-   return (dir->attributes & DIR_ATT_LONG_NAME_MASK) == DIR_ATT_LONG_NAME;
- }
- /** Mask for file/subdirectory tests */
--uint8_t const DIR_ATT_FILE_TYPE_MASK = (DIR_ATT_VOLUME_ID | DIR_ATT_DIRECTORY);
-+uint8_t const DIR_ATT_FILE_TYPE_MASK = (DIR_ATT_VOLUME_ID | DIR_ATT_DIRECTORY | DIR_ATT_SYSTEM | DIR_ATT_HIDDEN);
- /** Directory entry is for a file */
- static inline uint8_t DIR_IS_FILE(const dir_t* dir) {
-   return (dir->attributes & DIR_ATT_FILE_TYPE_MASK) == 0;
++++ ~/SD/src/utility/FatStructs.h	2018-05-15 11:11:41.126732900 -0400
 @@ -413,6 +413,6 @@
  }
  /** Directory entry is for a file or subdirectory */
  static inline uint8_t DIR_IS_FILE_OR_SUBDIR(const dir_t* dir) {
 -  return (dir->attributes & DIR_ATT_VOLUME_ID) == 0;
-+  return DIR_IS_FILE(dir) || DIR_IS_SUBDIR(dir);
++  return (dir->attributes & (DIR_ATT_VOLUME_ID | DIR_ATT_SYSTEM | DIR_ATT_HIDDEN)) == 0;
  }
  #endif  // FatStructs_h
 diff -ru ./SD/src/utility/SdFile.cpp ~/SD/src/utility/SdFile.cpp
 --- ./SD/src/utility/SdFile.cpp	2017-01-05 11:00:14.000000000 -0500
-+++ ~/SD/src/utility/SdFile.cpp	2018-05-14 21:48:10.131884900 -0400
++++ ~/SD/src/utility/SdFile.cpp	2018-05-15 11:11:41.215595400 -0500
 @@ -268,7 +268,7 @@
        while ((b = *p++)) if (b == c) return false;
  #endif
