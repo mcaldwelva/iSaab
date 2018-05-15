@@ -39,7 +39,7 @@ diff -ru ./SD/src/utility/SdFile.cpp ~/SD/src/utility/SdFile.cpp
  #endif
        // check size and only allow ASCII printable characters
 -      if (i > n || c < 0X21 || c > 0X7E)return false;
-+      if (i > n || c < 0X20 || c == 0x7F) return false;
++      if (i > n || c < 0x20 || c == 0x7F) return false;
        // only upper case allowed in 8.3 names - convert lower to upper
        name[i++] = c < 'a' || c > 'z' ?  c : c + ('A' - 'a');
      }
