@@ -1,6 +1,6 @@
 diff -ru ./SD/src/SD.cpp ~/SD/src/SD.cpp
---- ./SD/src/SD.cpp	2018-01-05 17:40:31.798859500 -0500
-+++ ~/SD/src/SD.cpp	2018-01-05 17:31:05.570433000 -0500
+--- ./SD/src/SD.cpp	2017-01-05 11:00:14.000000000 -0500
++++ ~/SD/src/SD.cpp	2018-05-14 21:50:51.449720400 -0400
 @@ -342,7 +342,8 @@
      Return true if initialization succeeds, false otherwise.
  
@@ -13,7 +13,7 @@ diff -ru ./SD/src/SD.cpp ~/SD/src/SD.cpp
  }
 diff -ru ./SD/src/utility/FatStructs.h ~/SD/src/utility/FatStructs.h
 --- ./SD/src/utility/FatStructs.h	2017-01-05 11:00:14.000000000 -0500
-+++ ~/SD/src/utility/FatStructs.h	2018-01-05 17:12:33.359708700 -0500
++++ ~/SD/src/utility/FatStructs.h	2018-05-14 21:46:32.844145100 -0400
 @@ -402,7 +402,7 @@
    return (dir->attributes & DIR_ATT_LONG_NAME_MASK) == DIR_ATT_LONG_NAME;
  }
@@ -23,15 +23,23 @@ diff -ru ./SD/src/utility/FatStructs.h ~/SD/src/utility/FatStructs.h
  /** Directory entry is for a file */
  static inline uint8_t DIR_IS_FILE(const dir_t* dir) {
    return (dir->attributes & DIR_ATT_FILE_TYPE_MASK) == 0;
+@@ -413,6 +413,6 @@
+ }
+ /** Directory entry is for a file or subdirectory */
+ static inline uint8_t DIR_IS_FILE_OR_SUBDIR(const dir_t* dir) {
+-  return (dir->attributes & DIR_ATT_VOLUME_ID) == 0;
++  return DIR_IS_FILE(dir) || DIR_IS_SUBDIR(dir);
+ }
+ #endif  // FatStructs_h
 diff -ru ./SD/src/utility/SdFile.cpp ~/SD/src/utility/SdFile.cpp
 --- ./SD/src/utility/SdFile.cpp	2017-01-05 11:00:14.000000000 -0500
-+++ ~/SD/src/utility/SdFile.cpp	2018-01-05 17:13:19.845842500 -0500
++++ ~/SD/src/utility/SdFile.cpp	2018-05-14 21:48:10.131884900 -0400
 @@ -268,7 +268,7 @@
        while ((b = *p++)) if (b == c) return false;
  #endif
        // check size and only allow ASCII printable characters
 -      if (i > n || c < 0X21 || c > 0X7E)return false;
-+      if (i > n || c < 0x20 || c == 0x7F) return false;
++      if (i > n || c < 0X20 || c == 0x7F) return false;
        // only upper case allowed in 8.3 names - convert lower to upper
        name[i++] = c < 'a' || c > 'z' ?  c : c + ('A' - 'a');
      }
