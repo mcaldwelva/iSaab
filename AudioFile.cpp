@@ -251,11 +251,11 @@ void AudioFile::readAsfHeader() {
 
       // Title Length
       read(buffer, 2);
-      uint32_t title_size = LE8x2(buffer);
+      uint16_t title_size = LE8x2(buffer);
 
       // Author Length
       read(buffer, 2);
-      uint32_t artist_size = LE8x2(buffer);
+      uint16_t artist_size = LE8x2(buffer);
 
       // Copyright + Description + Rating Length
       read(buffer, 6);
@@ -270,13 +270,11 @@ void AudioFile::readAsfHeader() {
       seek(skip);
 
       // Author
-      skip = position() + artist_size;
       if (artist_size > TAG_BUFFER) {
         artist_size = TAG_BUFFER;
       }
       read(buffer, artist_size);
       updateTag(Artist, buffer, artist_size);
-      seek(skip);
     }
     else if (!memcmp_P(buffer, ASF_Extended_Content_Description_Object, GUID)) {
       // Object Size
