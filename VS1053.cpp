@@ -79,25 +79,6 @@ bool VS1053::startTrack() {
     return false;
   }
 
-  // cancel playback twice to ensure coproc is ready
-  uint8_t cancelCounter = 0;
-  do {
-    // get codec specific fill byte
-    sciWrite(SCI_WRAMADDR, XP_ENDFILLBYTE);
-    uint8_t endFillByte = sciRead(SCI_WRAM);
-    uint8_t buffer[VS1053_BUFFER_SIZE];
-    memset(buffer, endFillByte, VS1053_BUFFER_SIZE);
-
-    // send cancel
-    sciWrite(SCI_MODE, SM_SDINEW | SM_CANCEL);
-
-    // send endFillByte until cancel is accepted
-    uint16_t flushCounter = 0;
-    do {
-      sendData(buffer, VS1053_BUFFER_SIZE);
-    } while ((flushCounter++ < 384) && (sciRead(SCI_MODE) & SM_CANCEL));
-  } while (cancelCounter++ < 2);
-
   // reset decode time
   skippedTime = 0;
   sciWrite(SCI_DECODETIME, 0x00);
@@ -120,19 +101,37 @@ bool VS1053::startTrack() {
 
 // play to end of file
 void VS1053::playTrack() {
+  uint8_t *buffer;
+
   // send data until the track is closed
   while (audio) {
     if (state == Playing || state == Rapid) {
-      uint8_t *buffer;
       uint16_t bytesRead = audio.readBlock(buffer);
-      if (bytesRead == 0) {
+      if (bytesRead) {
+        sendData(buffer, bytesRead);
+      } else {
         // close the file if there's no more data
         audio.close();
-      } else {
-        sendData(buffer, bytesRead);
       }
     }
   }
+
+  // get codec specific filler
+  sciWrite(SCI_WRAMADDR, XP_ENDFILLBYTE);
+  uint8_t endFillByte = sciRead(SCI_WRAM);
+  buffer = audio.fillBuffer(endFillByte, VS1053_BUFFER_SIZE);
+
+  // repeat cancel until header data is reset
+  do {
+    // send cancel
+    sciWrite(SCI_MODE, SM_SDINEW | SM_CANCEL);
+
+    // send endFillByte until cancel is accepted
+    uint16_t flushCounter = 0;
+    do {
+      sendData(buffer, VS1053_BUFFER_SIZE);
+    } while ((flushCounter++ < 384) && (sciRead(SCI_MODE) & SM_CANCEL));
+  } while (sciRead(SCI_HDAT1));
 }
 
 
@@ -151,6 +150,7 @@ void VS1053::skip(int16_t secs) {
   if (!audio.isFlac()) {
     rate >>= 2;
   }
+  rate++;
   rate <<= 2;
 
   // update position

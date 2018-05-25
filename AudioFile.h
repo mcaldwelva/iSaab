@@ -24,6 +24,10 @@ class AudioFile : public File
     bool isFlac() { return flac; };
     String getTag(uint8_t tag);
 
+    uint8_t *fillBuffer(uint8_t value, uint8_t num) {
+      return (uint8_t *) memset(buffer, value, num);
+    }
+
   private:
     bool flac;
     uint8_t *buffer;
