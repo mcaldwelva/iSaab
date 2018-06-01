@@ -9,7 +9,6 @@
 #define AUDIOFILE_H
 #include <SD.h>
 
-#define TAG_BUFFER 64
 #define MAX_TAG_LENGTH 24
 
 class AudioFile : public File
@@ -33,7 +32,7 @@ class AudioFile : public File
     uint8_t *buffer;
     String tags[MAX_TAG_ID];
 
-    void updateTag(uint8_t tag, char src[], uint8_t ssize);
+    void readTag(uint8_t tag, uint16_t ssize);
     void readId3Header();
     void readVorbisComments();
     int readFlacHeader();

@@ -41,20 +41,31 @@ String AudioFile::getTag(uint8_t tag) {
 }
 
 
-// append ascii chars from string to specified tag
-void AudioFile::updateTag(uint8_t tag, char src[], uint8_t ssize) {
-  for (uint8_t i = 0; i < ssize && tags[tag].length() < MAX_TAG_LENGTH; i++) {
-    if (' ' <= src[i] && src[i] <= '~') {
-      tags[tag] += src[i];
+// read ascii tag value directly from buffer
+void AudioFile::readTag(uint8_t tag, uint16_t ssize) {
+  uint16_t j = position() % 512;
+  read();
+
+  for (uint16_t i = 0; i < ssize && tags[tag].length() < MAX_TAG_LENGTH; i++) {
+    char c = buffer[j++];
+    if (' ' <= c && c <= '~') {
+      tags[tag] += c;
+    }
+
+    // advance buffer if needed
+    if (j == 512) {
+      seek(position() + i % 512);
+      read();
+      j = 0;
     }
   }
 }
 
 
 void AudioFile::readId3Header() {
-  char buffer[TAG_BUFFER];
+  char buffer[4];
   uint32_t header_end;
-  char tag[4];
+  char tag[ID3V23_ID];
   uint32_t tag_size;
 
   // major version
@@ -62,7 +73,7 @@ void AudioFile::readId3Header() {
   uint8_t ver = read();
 
   // minor version and flags
-  read(buffer, 2);
+  seek(position() + 2);
 
   // header size
   read(buffer, 4);
@@ -79,7 +90,7 @@ void AudioFile::readId3Header() {
       tag_size = (ver > 3) ? BE7x4(buffer) : BE8x4(buffer);
 
       // skip flags
-      read(buffer, 2);
+      seek(position() + 2);
     } else {
       // get id
       read(tag, ID3V20_ID);
@@ -89,18 +100,14 @@ void AudioFile::readId3Header() {
       tag_size = BE8x3(buffer);
     }
 
-    // read the tag value
+    // locate next tag
     uint32_t skip = position() + tag_size;
 
     // store it if it's one we care about
     for (uint8_t i = 0; i < MAX_TAG_ID; i++) {
       if (ver >= 3 ? !strncasecmp_P(tag, (Id3v23Fields + i * ID3V23_ID), ID3V23_ID)
                    : !strncasecmp_P(tag, (Id3v20Fields + i * ID3V20_ID), ID3V20_ID)) {
-        if (tag_size > TAG_BUFFER) {
-          tag_size = TAG_BUFFER;
-        }
-        read(buffer, tag_size);
-        updateTag(i, buffer, tag_size);
+        readTag(i, tag_size);
         break;
       }
     }
@@ -115,7 +122,7 @@ void AudioFile::readId3Header() {
 
 
 void AudioFile::readVorbisComments() {
-  char buffer[TAG_BUFFER];
+  char buffer[VORBIS_ID];
   uint32_t tag_count;
   uint32_t tag_size;
 
@@ -134,18 +141,18 @@ void AudioFile::readVorbisComments() {
     read(buffer, 4);
     tag_size = LE8x4(buffer);
 
-    // read the tag field
+    // locate next tag
     uint32_t skip = position() + tag_size;
-    if (tag_size > TAG_BUFFER) {
-      tag_size = TAG_BUFFER;
-    }
-    read(buffer, tag_size);
+
+    // read tag name
+    read(buffer, VORBIS_ID);
+    uint8_t delim = (uint16_t) memchr(buffer, '=', VORBIS_ID) - (uint16_t) &buffer + 1;
 
     // store it if it's one we care about
-    uint8_t delim = strchr(buffer, '=') - buffer + 1;
     for (uint8_t i = 0; i < MAX_TAG_ID; i++) {
       if (!strncasecmp_P(buffer, (VorbisFields + i * VORBIS_ID), delim)) {
-        updateTag(i, (buffer + delim), tag_size - delim);
+        seek(position() - (VORBIS_ID - delim));
+        readTag(i, tag_size - delim);
         break;
       }
     }
@@ -223,20 +230,17 @@ void AudioFile::readOggHeader() {
 
 
 void AudioFile::readAsfHeader() {
-  char buffer[TAG_BUFFER];
+  char buffer[GUID];
 
-  // Object ID
-  seek(GUID);
-
-  // Object Size
-  read(buffer, 8);
+  // Object ID & Size
+  seek(GUID + 8);
 
   // Number of Header Objects
   read(buffer, 4);
   uint32_t object_count = LE8x4(buffer);
 
   // Reserved Bytes
-  read(buffer, 2);
+  seek(position() + 2);
 
   // for each object
   while (object_count-- > 0 && this) {
@@ -247,7 +251,7 @@ void AudioFile::readAsfHeader() {
       // Object Size
       read(buffer, 4);
       next_object = position() - 20 + LE8x4(buffer);
-      read(buffer, 4);
+      seek(position() + 4);
 
       // Title Length
       read(buffer, 2);
@@ -262,25 +266,17 @@ void AudioFile::readAsfHeader() {
 
       // Title
       uint32_t skip = position() + title_size;
-      if (title_size > TAG_BUFFER) {
-        title_size = TAG_BUFFER;
-      }
-      read(buffer, title_size);
-      updateTag(Title, buffer, title_size);
+      readTag(Title, title_size);
       seek(skip);
 
       // Author
-      if (artist_size > TAG_BUFFER) {
-        artist_size = TAG_BUFFER;
-      }
-      read(buffer, artist_size);
-      updateTag(Artist, buffer, artist_size);
+      readTag(Artist, artist_size);
     }
     else if (!memcmp_P(buffer, ASF_Extended_Content_Description_Object, GUID)) {
       // Object Size
       read(buffer, 4);
       next_object = position() - 20 + LE8x4(buffer);
-      read(buffer, 4);
+      seek(position() + 4);
 
       // Content Descriptors Count
       read(buffer, 2);
@@ -315,11 +311,7 @@ void AudioFile::readAsfHeader() {
         // store it if it's one we care about
         for (uint8_t i = 0; i < MAX_TAG_ID; i++) {
           if (!strncmp_P(buffer, (AsfFields + i * ASF_ID), name_size)) {
-            if (value_size > TAG_BUFFER) {
-              value_size = TAG_BUFFER;
-            }
-            read(buffer, value_size);
-            updateTag(i, buffer, value_size);
+            readTag(i, value_size);
             break;
           }
         }
@@ -344,7 +336,7 @@ void AudioFile::readAsfHeader() {
 
 
 void AudioFile::readQtffHeader() {
-  char buffer[TAG_BUFFER];
+  char buffer[QTFF_ID];
   uint32_t next_atom;
   uint32_t parent_atom = size();
   uint8_t depth = 0;
@@ -374,17 +366,13 @@ void AudioFile::readQtffHeader() {
         seek(next_atom);
       }
     } else {
-      // store it if it's one we care about
+      // read tag value
       for (uint8_t i = 0; i < MAX_TAG_ID; i++) {
         if (!memcmp_P(buffer, (iTunesFields + i * QTFF_ID), QTFF_ID)) {
           // skip to 'data' value
           seek(position() + 16);
           uint16_t value_size = next_atom - position();
-          if (value_size > TAG_BUFFER) {
-            value_size = TAG_BUFFER;
-          }
-          read(buffer, value_size);
-          updateTag(i, buffer, value_size);
+          readTag(i, value_size);
           break;
         }
       }
