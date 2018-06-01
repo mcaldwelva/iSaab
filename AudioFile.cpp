@@ -287,8 +287,8 @@ void AudioFile::readAsfHeader() {
         read(buffer, 2);
         uint16_t name_size = LE8x2(buffer);
 
-        // Descriptor Name
-        uint32_t skip = position() + name_size;
+        // Descriptor Name & Value Data Type
+        uint32_t skip = position() + name_size + 2;
         name_size /= 2;
         if (name_size > ASF_ID) {
           name_size = ASF_ID;
@@ -298,12 +298,10 @@ void AudioFile::readAsfHeader() {
         }
         seek(skip);
 
-        // Descriptor Value Data Type
-        read((buffer + name_size), 2);
-
         // Descriptor Value Length
-        read((buffer + name_size), 2);
-        uint16_t value_size = LE8x2((buffer + name_size));
+        char w[2];
+        read(w, 2);
+        uint16_t value_size = LE8x2(w);
 
         // Descriptor Value
         skip = position() + value_size;
