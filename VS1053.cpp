@@ -121,16 +121,20 @@ void VS1053::playTrack() {
   uint8_t endFillByte = sciRead(SCI_WRAM);
   buffer = audio.fillBuffer(endFillByte, VS1053_BUFFER_SIZE);
 
-  // repeat cancel until header data is reset
+  uint16_t flushCounter = audio.isFlac() ? 384 : 64;
   do {
-    // send cancel
+    sendData(buffer, VS1053_BUFFER_SIZE);
+  } while (--flushCounter != 0);
+
+  // flush buffer & repeat cancel until header data is reset
+  do {
     sciWrite(SCI_MODE, SM_SDINEW | SM_CANCEL);
 
     // send endFillByte until cancel is accepted
-    uint16_t flushCounter = 0;
+    uint16_t flushCounter = audio.isFlac() ? 384 : 64;
     do {
       sendData(buffer, VS1053_BUFFER_SIZE);
-    } while ((flushCounter++ < 384) && (sciRead(SCI_MODE) & SM_CANCEL));
+    } while ((--flushCounter != 0) && (sciRead(SCI_MODE) & SM_CANCEL));
   } while (sciRead(SCI_HDAT1));
 }
 
