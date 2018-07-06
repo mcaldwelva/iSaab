@@ -52,7 +52,7 @@ void processMessage() {
   static uint8_t gap = 0;
   CAN::msg msg;
 
-  if (gap >= 9) {
+  if (gap == 0) {
     ibus.setMode(CAN::Normal);
   }
 
@@ -62,22 +62,22 @@ void processMessage() {
     switch (msg.id) {
       case RX_CDC_CONTROL:
         controlRequest(msg);
-        gap = 0;
+        gap = 9;
         break;
 
       case RX_CDC_POWER:
         powerRequest(msg);
-        gap = 0;
+        gap = 9;
         break;
 
       case RX_SID_REQUEST:
         displayRequest(msg);
-        gap++;
+        gap--;
         break;
     }
   }
 
-  if (gap >= 9) {
+  if (gap == 0) {
     ibus.setMode(CAN::ListenOnly);
   }
 }

@@ -90,8 +90,8 @@ void CAN::begin(uint16_t speed, const uint16_t high[] PROGMEM, const uint16_t lo
   // configure filters
   setFilters(high, low);
 
-  // standard operating mode
-  setMode(Normal);
+  // leave config mode
+  setMode(ListenOnly);
 }
 
 
