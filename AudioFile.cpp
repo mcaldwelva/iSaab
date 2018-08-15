@@ -412,12 +412,14 @@ int AudioFile::readHeader(uint8_t *&buf) {
       case 0x00000020:
         readQtffHeader();
         break;
+      case 0x49443304:
+      case 0x49443303:
+      case 0x49443302:
+        readId3Header();
+        break;
       default:
-        if (BE8x3(buffer) == 0x494433) {
-          readId3Header();
-        } else {
-          seek(0);
-        }
+        seek(0);
+        break;
     }
   }  else {
     // continuing header

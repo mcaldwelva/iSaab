@@ -154,7 +154,6 @@ void VS1053::skip(int16_t secs) {
   if (!audio.isFlac()) {
     rate >>= 2;
   }
-  rate++;
   rate <<= 2;
 
   // update position
