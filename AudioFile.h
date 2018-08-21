@@ -72,8 +72,8 @@ const char Id3v20Fields[] PROGMEM =
 const char iTunesFields[] PROGMEM =
   "\xa9""nam"
   "\xa9""alb"
-  "\xa9""ART"
   "\x61""ART"
+  "\xa9""ART"
   "\xa9""gen"
   "\xa9""day";
 
