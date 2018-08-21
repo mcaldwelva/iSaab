@@ -339,6 +339,9 @@ void AudioFile::readQtffHeader() {
   uint32_t parent_atom = size();
   uint8_t depth = 0;
 
+  // read 'ftyp' atom
+  seek(0);
+
   do {
     // atom size
     read(buffer, 4);
@@ -408,7 +411,6 @@ int AudioFile::readHeader(uint8_t *&buf) {
         break;
       case 0x00000020:
       case 0x0000001c:
-        seek(0);
         readQtffHeader();
         break;
       case 0x49443304:
