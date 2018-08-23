@@ -25,9 +25,7 @@ void setup() {
   ibus.begin(47, high_filters, low_filters);
 
   // use IRQ for incoming messages
-#ifdef SPI_HAS_TRANSACTION
   SPI.usingInterrupt(MCP2515_INT);
-#endif
   attachInterrupt(MCP2515_INT, processMessage, LOW);
 
   // save power

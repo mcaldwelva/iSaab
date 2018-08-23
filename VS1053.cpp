@@ -224,9 +224,7 @@ void VS1053::sendData(uint8_t data[], uint16_t len) {
       if (state == Off) return;
     }
 
-#ifdef SPI_HAS_TRANSACTION
     SPI.beginTransaction(VS1053_SDI_SETTING);
-#endif
     fastDigitalWrite(VS1053_XDCS, LOW);
 
     while (len > 0 && readyForData()) {
@@ -238,9 +236,7 @@ void VS1053::sendData(uint8_t data[], uint16_t len) {
     }
 
     fastDigitalWrite(VS1053_XDCS, HIGH);
-#ifdef SPI_HAS_TRANSACTION
     SPI.endTransaction();
-#endif
   }
 }
 
@@ -259,9 +255,7 @@ void VS1053::setVolume(uint8_t left, uint8_t right) {
 uint16_t VS1053::sciRead(uint8_t addr) {
   uint16_t data;
 
-#ifdef SPI_HAS_TRANSACTION
   SPI.beginTransaction(VS1053_SCI_SETTING);
-#endif
   fastDigitalWrite(VS1053_XCS, LOW);
 
   spiwrite(VS_READ_COMMAND);
@@ -272,18 +266,14 @@ uint16_t VS1053::sciRead(uint8_t addr) {
   data |= spiread();
 
   fastDigitalWrite(VS1053_XCS, HIGH);
-#ifdef SPI_HAS_TRANSACTION
   SPI.endTransaction();
-#endif
 
   return data;
 }
 
 
 void VS1053::sciWrite(uint8_t addr, uint16_t data) {
-#ifdef SPI_HAS_TRANSACTION
   SPI.beginTransaction(VS1053_SCI_SETTING);
-#endif
   fastDigitalWrite(VS1053_XCS, LOW);
 
   spiwrite(VS_WRITE_COMMAND);
@@ -292,9 +282,7 @@ void VS1053::sciWrite(uint8_t addr, uint16_t data) {
   spiwrite(data);
 
   fastDigitalWrite(VS1053_XCS, HIGH);
-#ifdef SPI_HAS_TRANSACTION
   SPI.endTransaction();
-#endif
 }
 
 

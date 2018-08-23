@@ -36,17 +36,13 @@ void CAN::begin(uint16_t speed, const uint16_t high[] PROGMEM, const uint16_t lo
   SPI.begin();
 
   // reset MCP2515 to clear registers and put it into configuration mode
-#ifdef SPI_HAS_TRANSACTION
   SPI.beginTransaction(MCP2515_SPI_SETTING);
-#endif
   fastDigitalWrite(MCP2515_CS, LOW);
 
   spiwrite(SPI_RESET);
 
   fastDigitalWrite(MCP2515_CS, HIGH);
-#ifdef SPI_HAS_TRANSACTION
   SPI.endTransaction();
-#endif
 
   // wait for reset to complete
   delayMicroseconds(10);
@@ -113,9 +109,7 @@ bool CAN::send(const msg &message) {
     return false;
   }
 
-#ifdef SPI_HAS_TRANSACTION
   SPI.beginTransaction(MCP2515_SPI_SETTING);
-#endif
   fastDigitalWrite(MCP2515_CS, LOW);
 
   // select buffer
@@ -143,9 +137,7 @@ bool CAN::send(const msg &message) {
   }
 
   fastDigitalWrite(MCP2515_CS, HIGH);
-#ifdef SPI_HAS_TRANSACTION
   SPI.endTransaction();
-#endif
 
   // calculate the control register and priority
   uint8_t ctrlreg = (address << 3) + TXB0CTRL;
@@ -178,17 +170,15 @@ bool CAN::receive(msg &message) {
     return false;
   }
 
-#ifdef SPI_HAS_TRANSACTION
   SPI.beginTransaction(MCP2515_SPI_SETTING);
-#endif
   fastDigitalWrite(MCP2515_CS, LOW);
 
   spiwrite(SPI_READ_RX | address);
 
   // standard id
-  message.id = spiread() << 3;
+  uint8_t sidh = spiread();
   uint8_t sidl = spiread();
-  message.id |= sidl >> 5;
+  message.id = (sidh << 3) | (sidl >> 5);
 
   // skip extended id
   spiread();
@@ -207,9 +197,7 @@ bool CAN::receive(msg &message) {
   }
 
   fastDigitalWrite(MCP2515_CS, HIGH);
-#ifdef SPI_HAS_TRANSACTION
   SPI.endTransaction();
-#endif
 
   return true;
 }
@@ -317,9 +305,7 @@ void CAN::setFilters(const uint16_t high[] PROGMEM, const uint16_t low[] PROGMEM
 
 
 void CAN::writeRegister( uint8_t address, uint8_t data ) {
-#ifdef SPI_HAS_TRANSACTION
   SPI.beginTransaction(MCP2515_SPI_SETTING);
-#endif
   fastDigitalWrite(MCP2515_CS, LOW);
 
   spiwrite(SPI_WRITE);
@@ -327,36 +313,28 @@ void CAN::writeRegister( uint8_t address, uint8_t data ) {
   spiwrite(data);
 
   fastDigitalWrite(MCP2515_CS, HIGH);
-#ifdef SPI_HAS_TRANSACTION
   SPI.endTransaction();
-#endif
 }
 
 
 uint8_t CAN::readStatus(uint8_t type) {
   uint8_t data;
 
-#ifdef SPI_HAS_TRANSACTION
   SPI.beginTransaction(MCP2515_SPI_SETTING);
-#endif
   fastDigitalWrite(MCP2515_CS, LOW);
 
   spiwrite(type);
   data = spiread();
 
   fastDigitalWrite(MCP2515_CS, HIGH);
-#ifdef SPI_HAS_TRANSACTION
   SPI.endTransaction();
-#endif
 
   return data;
 }
 
 
 void CAN::modifyRegister(uint8_t address, uint8_t mask, uint8_t data) {
-#ifdef SPI_HAS_TRANSACTION
   SPI.beginTransaction(MCP2515_SPI_SETTING);
-#endif
   fastDigitalWrite(MCP2515_CS, LOW);
 
   spiwrite(SPI_BIT_MODIFY);
@@ -365,18 +343,14 @@ void CAN::modifyRegister(uint8_t address, uint8_t mask, uint8_t data) {
   spiwrite(data);
 
   fastDigitalWrite(MCP2515_CS, HIGH);
-#ifdef SPI_HAS_TRANSACTION
   SPI.endTransaction();
-#endif
 }
 
 
 uint8_t CAN::readRegister(uint8_t address) {
   uint8_t data;
 
-#ifdef SPI_HAS_TRANSACTION
   SPI.beginTransaction(MCP2515_SPI_SETTING);
-#endif
   fastDigitalWrite(MCP2515_CS, LOW);
 
   spiwrite(SPI_READ);
@@ -384,9 +358,7 @@ uint8_t CAN::readRegister(uint8_t address) {
   data = spiread();
 
   fastDigitalWrite(MCP2515_CS, HIGH);
-#ifdef SPI_HAS_TRANSACTION
   SPI.endTransaction();
-#endif
 
   return data;
 }
