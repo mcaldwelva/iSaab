@@ -423,19 +423,22 @@ void Player::openNextTrack() {
       // enumerate files in this folder
       entry = path[depth].h.openNextFile();
       while (entry) {
-        if (!entry.isDirectory()) {
-          if (file++ == next && path[depth].last != UNKNOWN) {
+        if (entry.isDirectory()) {
+          // flag hasFolders
+          hasFolders = true;
+        } else {
+          // count file
+          if (file == next && path[depth].last != UNKNOWN) {
             // this is the file we're looking for
             ATOMIC_BLOCK(ATOMIC_FORCEON) {
-              current = next;
+              current = file;
               next = UNKNOWN;
               audio = entry;
             }
             return;
+          } else {
+            file++;
           }
-        } else {
-          // flag hasFolders
-          hasFolders = true;
         }
 
         entry.close();
@@ -464,7 +467,7 @@ void Player::openNextTrack() {
 
       // if we found one
       if (entry) {
-        // getStatus needs these to be consistent
+        // keep these consistent for getStatus
         ATOMIC_BLOCK(ATOMIC_FORCEON) {
           depth++;
           path[depth].folder = folder;
