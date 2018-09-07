@@ -186,14 +186,14 @@ bool VS1053::loadPlugin(const __FlashStringHelper* fileName) {
       addr = buff[0];
 
       plugin.read(buff, 2);
-      count = (buff[1] << 8) + buff[0];
+      count = LE8x2(buff);;
       byteCount += 4;
 
       if (count & 0x8000)      // RLE run, replicate n samples
       {
         count &= 0x7FFF;
         plugin.read(buff, 2);
-        val = (buff[1] << 8) + buff[0];
+        val = LE8x2(buff);;
         while (count--) {
           sciWrite(addr, val);
         }
@@ -204,7 +204,7 @@ bool VS1053::loadPlugin(const __FlashStringHelper* fileName) {
       {
         while (count--) {
           plugin.read(buff, 2);
-          val = (buff[1] << 8) + buff[0];
+          val = LE8x2(buff);;
           sciWrite(addr, val);
 
           byteCount += 2;
