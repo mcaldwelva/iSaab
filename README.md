@@ -22,7 +22,10 @@ This is built on the [BlueSaab 3.5mm module](http://bluesaab.blogspot.com/2014/0
 
 ## Build
 
-Cut the ribbon cable and strip the even wires (only the bottom row is used) so that they can be solderd in place with the MCU from the underside of the board.
+Most of the components are labeled to match the board. The following require special attention:
+1. Connect a jumper between R6 and LED1-
+2. Connect "DRV134" pin 1 to the 3.5mm Common (base), pin 7 to Left (tip) or Right (middle), and cap between pins 8 and 3
+3. Cut the ribbon cable and strip the even wires (only the bottom row is used) so that they can be solderd in place with the MCU from the underside of the board.
 
 | VS1053 Pin | AVR Pin | Ribbon Pin |
 | ----------:|:------- | ---------- |
