@@ -36,19 +36,20 @@ String AudioFile::getTag(uint8_t tag) {
 // read ascii tag value directly from buffer
 void AudioFile::readTag(uint8_t tag, uint16_t ssize) {
   uint16_t j = position() % 512;
-  read();
 
   for (uint16_t i = 0; i < ssize && tags[tag].length() < MAX_TAG_LENGTH; i++) {
+    switch (j) {
+      case 512: // advance file position
+          seek(position() + i % 512);
+          j = 0;
+      case 0: // cache block
+          read();
+          break;
+    }
+
     char c = buffer[j++];
     if (' ' <= c && c <= '~') {
       tags[tag] += c;
-    }
-
-    // advance buffer if needed
-    if (j == 512) {
-      seek(position() + i % 512);
-      read();
-      j = 0;
     }
   }
 }
