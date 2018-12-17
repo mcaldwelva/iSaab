@@ -45,7 +45,7 @@ Most of the components are labeled to match the board. The following require spe
 
 ## Software
 
-* Use Arduino 1.8.x or later
+* Use Arduino 1.8.5
 
 * Apply the provided SD library patch. This includes fixes to support extended ASCII characters, exclude system and hidden files from directory listings, allow SD card swapping while shutdown, and use full-speed SPI by default:
 
