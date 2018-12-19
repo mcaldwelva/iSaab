@@ -60,12 +60,12 @@ void processMessage() {
     switch (msg.id) {
       case RX_CDC_CONTROL:
         controlRequest(msg);
-        gap = 9;
+        gap = 15;
         break;
 
       case RX_CDC_POWER:
         powerRequest(msg);
-        gap = 9;
+        gap = 15;
         break;
 
       case RX_SID_REQUEST:
