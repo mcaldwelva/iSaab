@@ -47,13 +47,11 @@ void Player::setup() {
 
 // start-up player
 void Player::begin() {
-  if (state == Off) {
-    // turn on sound card
-    VS1053::begin();
+  // turn on sound card
+  VS1053::begin();
 
-    // initialize card reader
-    SD.begin(SD_CS);
-
+  // initialize card reader
+  if (SD.begin(25000000, SD_CS)) {
     // open SD root
     path[0].h = SD.open("/");
     current = UNKNOWN;
@@ -65,30 +63,31 @@ void Player::begin() {
     readPresets(F("PRESETS.TXT"));
 
     state = Playing;
+  } else {
+    // something went wrong
+    VS1053::end();
   }
 }
 
 
 // shut-down player
 void Player::end() {
-  if (state != Off) {
-    // resume current track on start-up
-    if (next == UNKNOWN) {
-      next = current;
-    }
-
-    // close any open file
-    stopTrack();
-
-    // collapse path structure
-    while (depth > 0) {
-      path[depth--].h.close();
-    }
-    path[0].h.close();
-
-    // turn off sound card
-    VS1053::end();
+  // resume current track on start-up
+  if (next == UNKNOWN) {
+    next = current;
   }
+
+  // close any open file
+  stopTrack();
+
+  // collapse path structure
+  while (depth > 0) {
+    path[depth--].h.close();
+  }
+  path[0].h.close();
+
+  // turn off sound card
+  VS1053::end();
 }
 
 
@@ -233,34 +232,22 @@ void Player::preset(uint8_t memory) {
 
 
 void Player::rewind() {
-  state = Rapid;
-  updateText();
-
-  int8_t seconds;
-  if (repeatCount >= 10) {
-    seconds = -12;
-  } else if (repeatCount >= 5) {
-    seconds = -7;
-  } else {
-    seconds = -3;
+  if (state != Rapid) {
+    state = Rapid;
+    updateText();
   }
-  skip(seconds);
+
+  skip(-repeatCount);
 }
 
 
 void Player::forward() {
-  state = Rapid;
-  updateText();
-
-  int8_t seconds;
-  if (repeatCount >= 10) {
-    seconds = +10;
-  } else if (repeatCount >= 5) {
-    seconds = +5;
-  } else {
-    seconds = +1;
+  if (state != Rapid) {
+    state = Rapid;
+    updateText();
   }
-  skip(seconds);
+
+  skip(repeatCount);
 }
 
 
