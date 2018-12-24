@@ -1,6 +1,6 @@
 diff -ru ./SD/src/utility/FatStructs.h ~/SD/src/utility/FatStructs.h
---- SD/src/utility/FatStructs.h	2018-11-22 08:48:46.000000000 -0500
-+++ /home/mcaldwel/SD/src/utility/FatStructs.h	2018-12-23 15:15:24.712996600 -0500
+--- ./SD/src/utility/FatStructs.h	2018-11-22 08:48:46.000000000 -0500
++++ ~/SD/src/utility/FatStructs.h	2018-12-23 15:15:24.712996600 -0500
 @@ -413,6 +413,6 @@
  }
  /** Directory entry is for a file or subdirectory */
@@ -10,8 +10,8 @@ diff -ru ./SD/src/utility/FatStructs.h ~/SD/src/utility/FatStructs.h
  }
  #endif  // FatStructs_h
 diff -ru ./SD/src/utility/SdFile.cpp ~/SD/src/utility/SdFile.cpp
---- SD/src/utility/SdFile.cpp	2018-11-22 08:48:46.000000000 -0500
-+++ /home/mcaldwel/SD/src/utility/SdFile.cpp	2018-12-23 15:15:59.920942800 -0500
+--- ./SD/src/utility/SdFile.cpp	2018-11-22 08:48:46.000000000 -0500
++++ ~/SD/src/utility/SdFile.cpp	2018-12-23 15:15:59.920942800 -0500
 @@ -268,7 +268,7 @@
        while ((b = *p++)) if (b == c) return false;
  #endif
