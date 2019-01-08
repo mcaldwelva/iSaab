@@ -79,6 +79,11 @@ bool VS1053::startTrack() {
     return false;
   }
 
+  // wait up to 15ms for HDAT to clear
+  for (uint8_t j = 15; sciRead(SCI_HDAT1) && j > 0; j--) {
+    delay(1);
+  }
+
   // reset decode time
   skippedTime = 0;
   sciWrite(SCI_DECODETIME, 0x00);
@@ -135,11 +140,6 @@ void VS1053::playTrack() {
   do {
     sendData(buffer, VS1053_BUFFER_SIZE);
   } while ((--i != 0) && (sciRead(SCI_MODE) & SM_CANCEL));
-
-  // wait up to 15ms for HDAT to clear
-  for (uint8_t j = 15; sciRead(SCI_HDAT1) && j > 0; j--) {
-    delay(1);
-  }
 }
 
 
