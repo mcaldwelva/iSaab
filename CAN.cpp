@@ -262,8 +262,8 @@ void CAN::setFilters(const uint16_t high[] PROGMEM, const uint16_t low[] PROGMEM
     writeRegister(RXM0SIDH, filter >> 3);
     writeRegister(RXM0SIDL, filter << 5);
 
-    // accept only standard id's that match the filters
-    flags = _BV(RXM0);
+    // accept only id's that match the filters
+    flags = 0;
   } else {
     // accept all messages
     flags = _BV(RXM1) | _BV(RXM0);
@@ -294,8 +294,8 @@ void CAN::setFilters(const uint16_t high[] PROGMEM, const uint16_t low[] PROGMEM
     writeRegister(RXM1SIDH, filter >> 3);
     writeRegister(RXM1SIDL, filter << 5);
 
-    // accept only standard id's that match the filters
-    flags = _BV(RXM0);
+    // accept only id's that match the filters
+    flags = 0;
   } else {
     // accept all messages
     flags = _BV(RXM1) | _BV(RXM0);
@@ -373,5 +373,3 @@ inline __attribute__((always_inline))
 void CAN::spiwrite(uint8_t c) {
   SPI.transfer(c);
 }
-
-

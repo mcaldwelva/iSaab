@@ -25,9 +25,9 @@ class AudioFile : public File
 
     AudioFile();
     void operator=(const File &file);
-    int readHeader(uint8_t *&buf);
+    int readMetadata(uint8_t *&buf);
     int readBlock(uint8_t *&buf);
-    bool isFlac() { return flac; };
+    bool isHighBitRate() { return type == FLAC || type == DSF; };
     String getTag(uint8_t tag);
 
     uint8_t *fillBuffer(uint8_t value, uint8_t num) {
@@ -35,17 +35,18 @@ class AudioFile : public File
     }
 
   private:
-    bool flac;
+    enum Type : uint8_t { FLAC, DSF, OTHER } type;
     uint8_t *buffer;
     String tags[MAX_TAG_ID];
 
     void readTag(uint8_t tag, uint16_t ssize);
-    void readId3Header();
+    void readId3Tags();
     void readVorbisComments();
-    int readFlacHeader();
-    void readOggHeader();
-    void readQtffHeader();
-    void readAsfHeader();
+    int readFlac();
+    void readOgg();
+    void readQtff();
+    void readAsf();
+    void readDsf();
 };
 
 #define VORBIS_ID 12
@@ -105,4 +106,3 @@ const byte ASF_Extended_Content_Description_Object[] PROGMEM =
   {0x40,0xA4,0xD0,0xD2,0x07,0xE3,0xD2,0x11,0x97,0xF0,0x00,0xA0,0xC9,0x5E,0xA8,0x50};
 
 #endif // AUDIOFILE_H
-

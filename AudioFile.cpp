@@ -16,7 +16,7 @@ void AudioFile::operator=(const File &file) {
   File::operator=(file);
 
   // reset properties
-  flac = false;
+  type = OTHER;
   for (uint8_t i = 0; i < MAX_TAG_ID; i++) {
     tags[i] = "";
   }
@@ -36,15 +36,14 @@ String AudioFile::getTag(uint8_t tag) {
 // read ascii tag value directly from buffer
 void AudioFile::readTag(uint8_t tag, uint16_t ssize) {
   uint16_t j = position() % 512;
+  read();
 
   for (uint16_t i = 0; i < ssize && tags[tag].length() < MAX_TAG_LENGTH; i++) {
-    switch (j) {
-      case 512: // advance file position
-          seek(position() + i % 512);
-          j = 0;
-      case 0: // cache block
-          read();
-          break;
+    // advance file position
+    if (j == 512) {
+      seek(position() + 512);
+      read();
+      j = 0;
     }
 
     char c = buffer[j++];
@@ -55,14 +54,13 @@ void AudioFile::readTag(uint8_t tag, uint16_t ssize) {
 }
 
 
-void AudioFile::readId3Header() {
+void AudioFile::readId3Tags() {
   char buffer[4];
   uint32_t header_end;
   char tag[ID3V23_ID];
   uint32_t tag_size;
 
   // major version
-  seek(3);
   uint8_t ver = read();
 
   // minor version and flags
@@ -156,7 +154,7 @@ void AudioFile::readVorbisComments() {
 }
 
 
-int AudioFile::readFlacHeader() {
+int AudioFile::readFlac() {
   char buffer[4];
   uint8_t block_type;
   bool last_block;
@@ -191,7 +189,7 @@ int AudioFile::readFlacHeader() {
 }
 
 
-void AudioFile::readOggHeader() {
+void AudioFile::readOgg() {
   int seg_count;
   uint16_t seg_size;
 
@@ -222,7 +220,7 @@ void AudioFile::readOggHeader() {
 }
 
 
-void AudioFile::readAsfHeader() {
+void AudioFile::readAsf() {
   char buffer[GUID];
 
   // Object ID & Size
@@ -326,11 +324,12 @@ void AudioFile::readAsfHeader() {
 }
 
 
-void AudioFile::readQtffHeader() {
+void AudioFile::readQtff() {
   char buffer[QTFF_ID];
   uint32_t next_atom;
   uint32_t parent_atom = size();
   uint8_t depth = 0;
+
 
   // read 'ftyp' atom
   seek(0);
@@ -349,7 +348,7 @@ void AudioFile::readQtffHeader() {
       if (!memcmp_P(buffer, (iTunesPath + depth * QTFF_ID), QTFF_ID)) {
         if (depth++ == 2) {
           // skip 'meta' version info
-          read(buffer, 4);
+          seek(position() + 4);
         }
         parent_atom = next_atom;
       } else {
@@ -379,50 +378,73 @@ void AudioFile::readQtffHeader() {
 }
 
 
-// reads audio header information
+void AudioFile::readDsf() {
+  // Pointer to Metadata chunk
+  uint32_t metadata = LE8x4((buffer + 20));
+
+  // read ID3v2 tags
+  if (metadata != 0) {
+    seek(metadata + 3);
+    readId3Tags();
+  }
+
+  // rewind
+  seek(0);
+}
+
+
+// read & store metadata from audio file
 // returns a pointer to the buffer and the number of bytes read
-int AudioFile::readHeader(uint8_t *&buf) {
+int AudioFile::readMetadata(uint8_t *&buf) {
   int siz = 0;
   buf = buffer;
 
+  // start
   if (position() == 0) {
-    // beginning of header
     read();
 
     // look for supported magic numbers
     switch(BE8x4(buffer)) {
       case 0x664c6143:
+        type = FLAC;
         seek(4);
-        siz = readFlacHeader();
-        flac = true;
+        siz = readFlac();
         break;
       case 0x4f676753:
-        readOggHeader();
+        readOgg();
         break;
       case 0x3026b275:
-        readAsfHeader();
+        readAsf();
         break;
       case 0x00000020:
       case 0x0000001c:
-        readQtffHeader();
+        readQtff();
         break;
       case 0x49443304:
       case 0x49443303:
       case 0x49443302:
-        readId3Header();
+        seek(3);
+        readId3Tags();
+        break;
+      case 0x44534420:
+        type = DSF;
+        readDsf();
         break;
       default:
         seek(0);
         break;
     }
-  }  else {
-    // continuing header
-    if (flac) {
-      readFlacHeader();
+
+  // continue
+  } else {
+    switch (type) {
+      case FLAC:
+        readFlac();
+        break;
     }
   }
 
-  // end of header
+  // done
   if (siz == 0) {
     // use file name if no title found
     if (tags[Title].length() == 0) {
@@ -452,4 +474,3 @@ int AudioFile::readBlock(uint8_t *&buf) {
 
   return siz;
 }
-

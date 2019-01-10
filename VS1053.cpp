@@ -89,11 +89,11 @@ bool VS1053::startTrack() {
   sciWrite(SCI_DECODETIME, 0x00);
   sciWrite(SCI_DECODETIME, 0x00);
 
-  // process header
+  // process metadata
   uint16_t bytesRead;
   do {
     uint8_t *buffer;
-    bytesRead = audio.readHeader(buffer);
+    bytesRead = audio.readMetadata(buffer);
     sendData(buffer, bytesRead);
   } while (bytesRead > 0);
 
@@ -127,7 +127,7 @@ void VS1053::playTrack() {
   buffer = audio.fillBuffer(endFillByte, VS1053_BUFFER_SIZE);
 
   // flush buffer
-  uint16_t i = audio.isFlac() ? 384 : 64;
+  uint16_t i = audio.isHighBitRate() ? 384 : 64;
   do {
     sendData(buffer, VS1053_BUFFER_SIZE);
   } while (--i != 0);
@@ -136,7 +136,7 @@ void VS1053::playTrack() {
   sciWrite(SCI_MODE, SM_SDINEW | SM_CANCEL);
 
   // send endFillByte until cancel is accepted
-  i = audio.isFlac() ? 384 : 64;
+  i = audio.isHighBitRate() ? 384 : 64;
   do {
     sendData(buffer, VS1053_BUFFER_SIZE);
   } while ((--i != 0) && (sciRead(SCI_MODE) & SM_CANCEL));
@@ -155,7 +155,7 @@ void VS1053::skip(int16_t secs) {
   long rate = sciRead(SCI_WRAM);
 
   // adjust rate based on codec
-  if (!audio.isFlac()) {
+  if (!audio.isHighBitRate()) {
     rate >>= 2;
   }
   rate <<= 2;
@@ -193,8 +193,8 @@ bool VS1053::loadPlugin(const __FlashStringHelper* fileName) {
       count = LE8x2(buff);
       byteCount += 4;
 
-      if (count & 0x8000)      // RLE run, replicate n samples
-      {
+      if (count & 0x8000) {
+        // RLE run, replicate n samples
         count &= 0x7FFF;
         plugin.read(buff, 2);
         val = LE8x2(buff);
@@ -203,9 +203,8 @@ bool VS1053::loadPlugin(const __FlashStringHelper* fileName) {
         }
 
         byteCount += 2;
-      }
-      else                      // Copy run, copy n samples
-      {
+      } else {
+        // Copy run, copy n samples
         while (count--) {
           plugin.read(buff, 2);
           val = LE8x2(buff);
@@ -305,4 +304,3 @@ inline __attribute__((always_inline))
 void VS1053::spiwrite(uint8_t c) {
   SPI.transfer(c);
 }
-
