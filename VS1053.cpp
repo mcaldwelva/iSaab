@@ -37,7 +37,7 @@ void VS1053::setup() {
 // power on
 void VS1053::begin() {
   // turn on coproc
-  state = Powerup;
+  state = PowerOn;
   digitalWrite(VS1053_XRESET, HIGH);
   while (!readyForData());
 
@@ -80,7 +80,7 @@ bool VS1053::startTrack() {
   }
 
   // wait up to 15ms for HDAT to clear
-  for (uint8_t j = 15; sciRead(SCI_HDAT1) && j > 0; j--) {
+  for (uint8_t j = 15; j > 0 && sciRead(SCI_HDAT1); j--) {
     delay(1);
   }
 
@@ -110,7 +110,7 @@ void VS1053::playTrack() {
 
   // send data until the track is closed
   while (audio) {
-    if (state == Playing || state == Rapid) {
+    if (state >= Playing) {
       uint16_t bytesRead = audio.readBlock(buffer);
       if (bytesRead) {
         sendData(buffer, bytesRead);
@@ -224,7 +224,7 @@ bool VS1053::loadPlugin(const __FlashStringHelper* fileName) {
 void VS1053::sendData(uint8_t data[], uint16_t len) {
   while (len > 0) {
     while (!readyForData()) {
-      if (state == Off) return;
+      if (state <= PowerOff) return;
     }
 
     SPI.beginTransaction(VS1053_SDI_SETTING);

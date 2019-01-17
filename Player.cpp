@@ -20,9 +20,7 @@ Player::Player() {
 
   // no music files in the root
   depth = 0;
-  path[0].folder = 0;
-  path[0].first = 0;
-  path[0].last = 0;
+  memset(path, 0, sizeof(path));
 }
 
 
@@ -50,10 +48,9 @@ void Player::begin() {
   // turn on sound card
   VS1053::begin();
 
-  // initialize card reader
-  if (SD.begin(25000000, SD_CS)) {
-    // open SD root
-    path[0].h = SD.open("/");
+  // open SD card
+  if (SD.begin(25000000, SD_CS)
+      && (path[0].h = SD.open("/"))) {
     current = UNKNOWN;
 
     // load FLAC patch

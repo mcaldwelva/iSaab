@@ -47,7 +47,7 @@ Most of the components are labeled to match the board. The following require spe
 
 * Use Arduino 1.8.8
 
-* Apply the provided SD library patch. This includes fixes to support extended ASCII characters, exclude system and hidden files from directory listings, allow SD card swapping while shutdown, and use full-speed SPI by default:
+* Apply the provided SD library patch. This includes fixes to support extended ASCII characters and exclude hidden/system files from directory listings:
 
 > C:\Program Files (x86)\Arduino\libraries> patch -p1 < %HOMEPATH%\Documents\Arduino\iSaab\data\SD.diff
 
