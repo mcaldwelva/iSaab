@@ -21,7 +21,6 @@
 class Player : private VS1053
 {
   public:
-    Player();
     void setup();
     void begin();
     void end();
@@ -66,7 +65,10 @@ class Player : private VS1053
       uint16_t last;
     } path[MAX_DEPTH + 1];
     int8_t depth;
+
+    // random stuff
+    uint32_t seed;
+    uint16_t xorshift(uint16_t min, uint16_t max);
 };
 
 #endif // Player.h
-

@@ -278,4 +278,3 @@ void displayRequest(CAN::msg &msg) {
     while (!ibus.send(msg));
   }
 }
-

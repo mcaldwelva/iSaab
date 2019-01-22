@@ -10,20 +10,6 @@
 #include "Player.h"
 
 
-Player::Player() {
-  // initial player state
-  repeatCount = 0;
-  display.tag = 0;
-
-  // select the first track
-  next = 0;
-
-  // no music files in the root
-  depth = 0;
-  memset(path, 0, sizeof(path));
-}
-
-
 // perform one-time setup on power-up
 void Player::setup() {
   // deselect SD card
@@ -34,12 +20,12 @@ void Player::setup() {
   VS1053::setup();
 
   // initialize shuffler
-  uint32_t seed = 0;
+  uint32_t t;
   for (uint8_t i = 0; i < 32; i++) {
-    seed <<= 1;
-    seed |= analogRead(0) & 1;
+    t <<= 1;
+    t |= analogRead(0) & 1;
   }
-  randomSeed(seed);
+  seed = t;
 }
 
 
@@ -58,8 +44,6 @@ void Player::begin() {
 
     // read presets
     readPresets(F("PRESETS.TXT"));
-
-    state = Playing;
   } else {
     // something went wrong
     VS1053::end();
@@ -90,7 +74,7 @@ void Player::end() {
 
 // main playback loop
 void Player::play() {
-  while (state != Off) {
+  while (state > PowerOn) {
     // get the next track if one hasn't already been selected
     if (next == UNKNOWN) {
       nextTrack();
@@ -114,7 +98,7 @@ void Player::pause() {
 
 
 void Player::resume() {
-  if (state != Off) {
+  if (state == Paused) {
     state = Playing;
     updateText();
   }
@@ -131,7 +115,7 @@ void Player::shuffle() {
 void Player::nextTrack() {
   if (shuffled) {
     if (next == UNKNOWN) {
-      do { next = random(path[depth].first, path[depth].last + 500); } while (next == current);
+      do { next = xorshift(path[depth].first, path[depth].last + 500); } while (next == current);
     }
   } else {
       // if no track is queued up
@@ -393,7 +377,7 @@ void Player::openNextTrack() {
 
   // search forward until we find the file
   File entry;
-  while (state != Off) {
+  while (state >= PowerOn) {
 
     // start from the top of the folder if necessary
     if (next < file) {
@@ -451,12 +435,9 @@ void Player::openNextTrack() {
 
       // if we found one
       if (entry) {
-        // keep these consistent for getStatus
-        ATOMIC_BLOCK(ATOMIC_FORCEON) {
-          depth++;
-          path[depth].folder = folder;
-          path[depth].first = file;
-        }
+        depth++;
+        path[depth].folder = folder;
+        path[depth].first = file;
         path[depth].h = entry;
         path[depth].last = UNKNOWN;
         hasFolders = false;
@@ -473,4 +454,15 @@ void Player::openNextTrack() {
       }
     }
   }
+}
+
+
+uint16_t Player::xorshift(uint16_t min, uint16_t max) {
+  uint32_t t = seed;
+  t ^= t << 9;
+  t ^= t >> 7;
+  t ^= t << 3;
+  seed = t;
+
+  return (t >> 16) % (max - min) + min;
 }
