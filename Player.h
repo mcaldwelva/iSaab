@@ -67,7 +67,7 @@ class Player : private VS1053
     int8_t depth;
 
     // random stuff
-    uint32_t seed;
+    uint16_t seed;
     uint16_t xorshift(uint16_t min, uint16_t max);
 };
 

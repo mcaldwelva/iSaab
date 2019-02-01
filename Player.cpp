@@ -20,8 +20,8 @@ void Player::setup() {
   VS1053::setup();
 
   // initialize shuffler
-  uint32_t t;
-  for (uint8_t i = 0; i < 32; i++) {
+  uint16_t t;
+  for (uint8_t i = 0; i < 16; i++) {
     t <<= 1;
     t |= analogRead(0) & 1;
   }
@@ -31,22 +31,24 @@ void Player::setup() {
 
 // start-up player
 void Player::begin() {
-  // turn on sound card
-  VS1053::begin();
+  if (state == Off) {
+    // turn on sound card
+    VS1053::begin();
 
-  // open SD card
-  if (SD.begin(25000000, SD_CS)
-      && (path[0].h = SD.open("/"))) {
-    current = UNKNOWN;
+    // open SD card
+    if (SD.begin(25000000, SD_CS)
+        && (path[0].h = SD.open("/"))) {
+      current = UNKNOWN;
 
-    // load FLAC patch
-    loadPlugin(F("PATCH053.BIN"));
+      // load FLAC patch
+      loadPlugin(F("PATCH053.BIN"));
 
-    // read presets
-    readPresets(F("PRESETS.TXT"));
-  } else {
-    // something went wrong
-    VS1053::end();
+      // read presets
+      readPresets(F("PRESETS.TXT"));
+    } else {
+      // something went wrong
+      VS1053::end();
+    }
   }
 }
 
@@ -74,7 +76,7 @@ void Player::end() {
 
 // main playback loop
 void Player::play() {
-  while (state > PowerOn) {
+  while (state >= Paused) {
     // get the next track if one hasn't already been selected
     if (next == UNKNOWN) {
       nextTrack();
@@ -458,11 +460,9 @@ void Player::openNextTrack() {
 
 
 uint16_t Player::xorshift(uint16_t min, uint16_t max) {
-  uint32_t t = seed;
-  t ^= t << 9;
-  t ^= t >> 7;
-  t ^= t << 3;
-  seed = t;
+  seed ^= seed << 7;
+  seed ^= seed >> 11;
+  seed ^= seed << 2;
 
-  return (t >> 16) % (max - min) + min;
+  return seed % (max - min) + min;
 }
