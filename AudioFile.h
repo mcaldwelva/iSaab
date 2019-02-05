@@ -24,7 +24,7 @@ class AudioFile : public File
     enum Tag : uint8_t { Title, Album, Band, Artist, Genre, Year, MAX_TAG_ID };
 
     AudioFile();
-    void operator=(const File &file);
+    AudioFile& operator=(const File &file);
     int readMetadata(uint8_t *&buf);
     int readBlock(uint8_t *&buf);
     bool isHighBitRate() { return type == FLAC || type == DSF; };

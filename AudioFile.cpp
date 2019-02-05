@@ -12,7 +12,7 @@ AudioFile::AudioFile() {
 }
 
 
-void AudioFile::operator=(const File &file) {
+AudioFile& AudioFile::operator=(const File &file) {
   File::operator=(file);
 
   // reset properties
@@ -20,6 +20,8 @@ void AudioFile::operator=(const File &file) {
   for (uint8_t i = 0; i < MAX_TAG_ID; i++) {
     tags[i] = "";
   }
+
+  return *this;
 }
 
 
