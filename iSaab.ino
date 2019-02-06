@@ -192,20 +192,21 @@ void displayRequest(CAN::msg &msg) {
     uint8_t tec = ibus.getSendErrors();
     uint8_t rec = ibus.getReceiveErrors();
     uint8_t eflg = ibus.getErrorFlags();
+    uint16_t mem = FreeRam();
 
     if (wanted == 13 || tec || rec || eflg) {
       text[0]  = 'T';
-      text[1]  = 'E';
-      text[2]  = 'C';
-      text[5]  = (tec % 10) + '0'; tec /= 10;
-      text[4]  = (tec % 10) + '0'; tec /= 10;
-      text[3]  = (tec % 10) + '0';
-      text[6]  = 'R';
-      text[7]  = 'E';
-      text[8]  = 'C';
-      text[11] = (rec % 10) + '0'; rec /= 10;
-      text[10] = (rec % 10) + '0'; rec /= 10;
-      text[9]  = (rec % 10) + '0';
+      text[3]  = (tec % 10) + '0'; tec /= 10;
+      text[2]  = (tec % 10) + '0'; tec /= 10;
+      text[1]  = (tec % 10) + '0';
+      text[4]  = 'R';
+      text[7] = (rec % 10) + '0'; rec /= 10;
+      text[6] = (rec % 10) + '0'; rec /= 10;
+      text[5]  = (rec % 10) + '0';
+      text[8]  = 'M';
+      text[11] = (mem % 10) + '0'; mem /= 10;
+      text[10] = (mem % 10) + '0'; mem /= 10;
+      text[9]  = (mem % 10) + '0';
       text[12] = 'O';
       text[13] = eflg & _BV(7) ? '1' : ' ';
       text[14] = eflg & _BV(6) ? '0' : ' ';
