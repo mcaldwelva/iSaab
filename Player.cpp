@@ -25,7 +25,7 @@ void Player::setup() {
     t <<= 1;
     t |= analogRead(0) & 1;
   }
-  seed = t;
+  seed = t + 1;
 }
 
 
@@ -461,8 +461,8 @@ void Player::openNextTrack() {
 
 uint16_t Player::xorshift(uint16_t min, uint16_t max) {
   seed ^= seed << 7;
-  seed ^= seed >> 11;
-  seed ^= seed << 2;
+  seed ^= seed >> 9;
+  seed ^= seed << 8;
 
   return seed % (max - min) + min;
 }
