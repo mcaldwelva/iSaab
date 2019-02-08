@@ -25,7 +25,7 @@ void Player::setup() {
     t <<= 1;
     t |= analogRead(0) & 1;
   }
-  seed = t + 1;
+  seed = t ? t : 1;
 }
 
 
