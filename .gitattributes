@@ -1,0 +1,10 @@
+* text=auto
+
+*.cpp text
+*.diff text
+*.ino text
+*.h text
+*.md text
+
+*.bin binary
+*.jpg binary
