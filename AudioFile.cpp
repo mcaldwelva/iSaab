@@ -1,8 +1,9 @@
 /*
- * AudioFile - extends the SDLib::File class to provide some nice-to-have
- *             features when working with the VS1053b sound coprocessor
+ * AudioFile extends SDLib::File to provide some useful features for VS1053
+ *   - block-aligned reads for optimal playback
+ *   - metadata hiding for near-seemless transitions (FLAC and MP3)
+ *   - metadata parsing for supported file types
  *
- * 02/01/2016 Mike C. - v 1.0x
  */
 
 #include "AudioFile.h"
@@ -332,10 +333,6 @@ void AudioFile::readQtff() {
   uint32_t parent_atom = size();
   uint8_t depth = 0;
 
-
-  // read 'ftyp' atom
-  seek(0);
-
   do {
     // atom size
     read(buffer, 4);
@@ -420,6 +417,7 @@ int AudioFile::readMetadata(uint8_t *&buf) {
         break;
       case 0x00000020:
       case 0x0000001c:
+        seek(BE8x4(buffer));
         readQtff();
         break;
       case 0x49443304:

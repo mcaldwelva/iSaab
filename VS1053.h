@@ -1,10 +1,3 @@
-/*
- *  VS1053 - Provides a simplified interface for playing files
- *           through a VLSI VS1053b sound coprocessor
- *
- *  07/04/2015 Mike C. - v1.0
- */
-
 #ifndef VS1053_H
 #define VS1053_H
 

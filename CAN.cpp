@@ -1,23 +1,9 @@
 /*
- *  CONTROLLER AREA NETWORK (CAN 2.0A STANDARD ID)
- *  CAN BUS library for Wiring/Arduino 1.1
- *  ADAPTED FROM http://www.kreatives-chaos.com
- *  By IGOR REAL (16 - 05 - 2011)
+ *  CAN implements CAN 2.0A (standard) interface for MCP2515 and related controllers
+ *      based on work by Fabian Greif and Igor Real
+ *   - Uses SPI transactions to allow bus sharing
+ *   - Optionally use RX0BF or RX1BF to manage transceiver or mode indicator
  *
- *  08/24/2015 Mike C. - Number of changes:
- *   1. Use SPI transactions to allow bus sharing
- *   2. Use Arduino pin macros for portability and readability
- *   3. Code simplification, C++ style pass by reference
- *   4. Removed global vars and buffer implementation to save memory
- *   5. Added Wake-on-CAN
- *
- *  03/04/2016 Mike C. - More changes:
- *   1. send: guarantees transmission order of up to 12 consecutive messages
- *   2. receive: get RTR bit from the right place
- *   3. simplified public interface
- *
- *  10/12/2016 Mike C. - Fixed clearing Rx buffers
- *  10/06/2017 Mike C. - Use RX1BF to manage transceiver and RX0BF as indicator
  */
 
 #include <SPI.h>
@@ -91,7 +77,8 @@ void CAN::begin(uint16_t speed, const uint16_t high[] PROGMEM, const uint16_t lo
 }
 
 
-// transmit a message in the order it was presented
+// transmit a message in FIFO order
+// returns true if buffered successfully
 bool CAN::send(const msg &message) {
   static uint8_t id;
   uint8_t status = readStatus(SPI_READ_STATUS);
@@ -154,6 +141,7 @@ bool CAN::send(const msg &message) {
 
 
 // read the highest priority message available and clear its buffer
+// returns true if a message was received
 bool CAN::receive(msg &message) {
   uint8_t address;
 

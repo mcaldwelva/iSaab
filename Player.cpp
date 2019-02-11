@@ -1,8 +1,9 @@
 /*
- *  Player - Implements the essential features of a media player
- *           returns player status as a Saab-ready message
+ *  Player extends VS1053 audio file playback to an entire file system
+ *   - Folders are serached in depth-first order
+ *   - Files are played in file system order
+ *   - Emulates Saab CD changer behaviors
  *
- *  07/04/2015 Mike C. - v1.0
  */
 
 #include <SD.h>

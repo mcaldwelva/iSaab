@@ -1,10 +1,3 @@
-/*
- * AudioFile - extends the SDLib::File class to provide some nice-to-have
- *             features when working with the VS1053b sound coprocessor
- *
- * 02/01/2016 Mike C. - v 1.0x
- */
-
 #ifndef AUDIOFILE_H
 #define AUDIOFILE_H
 #include <SD.h>

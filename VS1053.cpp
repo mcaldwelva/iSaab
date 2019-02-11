@@ -1,16 +1,15 @@
 /*
- *  VS1053 - Provides a simplified interface for playing files
- *           through a VLSI VS1053b sound coprocessor
+ *  VS1053 provides a high-speed codec interface for general playback
+ *         of an audio file in any vendor supported format
  *
- *  07/04/2015 Mike C. - v1.0
  */
 
 #include <SPI.h>
 #include <SD.h>
 #include "VS1053.h"
 
-#define VS1053_SCI_SETTING SPISettings(1750000, MSBFIRST, SPI_MODE0)
-#define VS1053_SDI_SETTING SPISettings(13800000, MSBFIRST, SPI_MODE0)
+#define VS1053_SCI_SETTING SPISettings(12288000/7, MSBFIRST, SPI_MODE0)
+#define VS1053_SDI_SETTING SPISettings(55296000/4, MSBFIRST, SPI_MODE0)
 
 // setup pins
 void VS1053::setup() {
@@ -43,7 +42,7 @@ void VS1053::begin() {
   // turn down analog
   setVolume(0xfe, 0xfe);
 
-  // set internal speed, SC_MULT=4.5x, SC_ADD=0.0x
+  // max internal speed
   sciWrite(SCI_CLOCKF, 0xc000);
 
   // wait until ready

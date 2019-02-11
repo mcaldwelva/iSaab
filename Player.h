@@ -1,10 +1,3 @@
-/*
- *  Player - Implements the essential features of a media player
- *           returns player status as a Saab-ready message
- *
- *  07/04/2015 Mike C. - v1.0
- */
-
 #ifndef PLAYER_H
 #define PLAYER_H
 

@@ -1,7 +1,6 @@
 /*
- * iSaab -- A Virtual CD Changer for early 9-3's and 9-5's
+ * iSaab -- A virtual CD Changer for early 9-3's and 9-5's
  *
- * 08/24/2015 Mike C. - v 1.0
  */
 
 #include <SPI.h>
