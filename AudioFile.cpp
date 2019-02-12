@@ -474,3 +474,27 @@ int AudioFile::readBlock(uint8_t *&buf) {
 
   return siz;
 }
+
+
+// jump to a relative position in the audio file based on a given
+// number of seconds and VS1053 calculated byterate
+// returns true if successful
+bool AudioFile::jump(int16_t secs, uint16_t rate) {
+  long bytes;
+
+  // calculate number of bytes to jump
+  switch (type) {
+    case FLAC:
+      bytes = secs * 4 * (long)rate;
+      break;
+    default:
+      bytes = secs * (rate & 0xfffc);
+      break;
+    case DSF:
+      bytes = secs * 352800;
+      break;
+  }
+
+  // update position
+  return seek(position() + bytes);
+}

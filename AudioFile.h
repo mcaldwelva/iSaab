@@ -20,6 +20,7 @@ class AudioFile : public File
     AudioFile& operator=(const File &file);
     int readMetadata(uint8_t *&buf);
     int readBlock(uint8_t *&buf);
+    bool jump(int16_t secs, uint16_t rate);
     bool isHighBitRate() { return type == FLAC || type == DSF; };
     String getTag(uint8_t tag);
 

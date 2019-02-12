@@ -152,17 +152,10 @@ void VS1053::skip(int16_t secs) {
 
   // get average byterate
   sciWrite(SCI_WRAMADDR, XP_BYTERATE);
-  long rate = sciRead(SCI_WRAM);
+  uint16_t rate = sciRead(SCI_WRAM);
 
-  // adjust rate based on codec
-  if (!audio.isHighBitRate()) {
-    rate >>= 2;
-  }
-  rate <<= 2;
-
-  // update position
-  long pos = audio.position() + rate * secs;
-  if (audio.seek(pos)) {
+  // jump to new location
+  if (audio.jump(secs, rate)) {
     skippedTime += secs;
   }
 }
