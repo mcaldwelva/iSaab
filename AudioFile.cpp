@@ -44,7 +44,7 @@ void AudioFile::readTag(uint8_t tag, uint16_t ssize) {
   for (uint16_t i = 0; i < ssize && tags[tag].length() < MAX_TAG_LENGTH; i++) {
     // advance file position
     if (j == 512) {
-      seek(position() + 512);
+      seek(position() + 511);
       read();
       j = 0;
     }
@@ -487,11 +487,11 @@ bool AudioFile::jump(int16_t secs, uint16_t rate) {
     case FLAC:
       bytes = secs * 4 * (long)rate;
       break;
-    default:
-      bytes = secs * (rate & 0xfffc);
-      break;
     case DSF:
       bytes = secs * 352800;
+      break;
+    default:
+      bytes = secs * (rate & 0xfffc);
       break;
   }
 
