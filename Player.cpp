@@ -32,24 +32,21 @@ void Player::setup() {
 
 // start-up player
 void Player::begin() {
-  if (state == Off) {
-    // turn on sound card
-    VS1053::begin();
+  // turn on sound card
+  VS1053::begin();
 
-    // open SD card
-    if (SD.begin(25000000, SD_CS)
-        && (path[0].h = SD.open("/"))) {
-      current = UNKNOWN;
+  // open SD card
+  if (SD.begin(25000000, SD_CS)
+      && (path[0].h = SD.open("/"))) {
+    current = UNKNOWN;
 
-      // load FLAC patch
-      loadPlugin(F("PATCH053.BIN"));
+    // load FLAC patch
+    loadPlugin(F("PATCH053.BIN"));
 
-      // read presets
-      readPresets(F("PRESETS.TXT"));
-    } else {
-      // something went wrong
-      VS1053::end();
-    }
+    // read presets
+    readPresets(F("PRESETS.TXT"));
+
+    state = Paused;
   }
 }
 
@@ -57,12 +54,7 @@ void Player::begin() {
 // shut-down player
 void Player::end() {
   // resume current track on start-up
-  if (next == UNKNOWN) {
-    next = current;
-  }
-
-  // close any open file
-  stopTrack();
+  next = current;
 
   // collapse path structure
   while (depth > 0) {
@@ -72,28 +64,52 @@ void Player::end() {
 
   // turn off sound card
   VS1053::end();
+
+  state = Off;
 }
 
 
 // main playback loop
 void Player::play() {
-  while (state >= Paused) {
-    // get the next track if one hasn't already been selected
-    if (next == UNKNOWN) {
-      nextTrack();
-    }
-    openNextTrack();
-    startTrack();
-    updateText();
+  if (state == Busy) {
+    begin();
 
-    playTrack();
-    updateText();
+    while (state >= Paused) {
+      // get the next track if one hasn't already been selected
+      if (next == UNKNOWN) {
+        nextTrack();
+      }
+      openNextTrack();
+
+      startTrack();
+      updateText();
+
+      playTrack();
+      updateText();
+    }
+
+    end();
+  }
+}
+
+
+void Player::on() {
+  if (state == Off) {
+    state = Busy;
+  }
+}
+
+
+void Player::off() {
+  if (state >= Paused ) {
+    state = Busy;
+    stopTrack();
   }
 }
 
 
 void Player::pause() {
-  if (state == Playing) {
+  if (state >= Playing) {
     state = Paused;
     updateText();
   }
@@ -101,7 +117,7 @@ void Player::pause() {
 
 
 void Player::resume() {
-  if (state == Paused) {
+  if (state >= Busy) {
     state = Playing;
     updateText();
   }
@@ -380,7 +396,7 @@ void Player::openNextTrack() {
 
   // search forward until we find the file
   File entry;
-  while (state >= PowerOn) {
+  while (state >= Paused) {
 
     // start from the top of the folder if necessary
     if (next < file) {

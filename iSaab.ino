@@ -94,11 +94,11 @@ void powerRequest(CAN::msg &msg) {
       break;
     case 0x03: // power on
       msg.data[3] = 0x03;
-      cdc.begin();
+      cdc.on();
       break;
     case 0x08: // power off
       msg.data[3] = 0x19;
-      cdc.end();
+      cdc.off();
       break;
   }
   msg.data[0] = 0x32;

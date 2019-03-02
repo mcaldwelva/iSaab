@@ -50,8 +50,6 @@ void VS1053::begin() {
 
   // max swing
   sciWrite(SCI_STATUS, 0x2141);
-
-  state = Playing;
 }
 
 
@@ -59,7 +57,6 @@ void VS1053::begin() {
 void VS1053::end() {
   // turn off coproc
   digitalWrite(VS1053_XRESET, LOW);
-  state = Off;
 }
 
 
@@ -217,7 +214,7 @@ bool VS1053::loadPlugin(const __FlashStringHelper* fileName) {
 void VS1053::sendData(uint8_t data[], uint16_t len) {
   while (len > 0) {
     while (!readyForData()) {
-      if (state <= PowerOff) return;
+      if (state <= Busy) return;
     }
 
     SPI.beginTransaction(VS1053_SDI_SETTING);

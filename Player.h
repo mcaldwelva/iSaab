@@ -15,8 +15,8 @@ class Player : private VS1053
 {
   public:
     void setup();
-    void begin();
-    void end();
+    void on();
+    void off();
 
     void play();
     void pause();
@@ -34,6 +34,8 @@ class Player : private VS1053
     int getText(char *&buf);
 
   private:
+    void begin();
+    void end();
     void openNextTrack();
     void readPresets(const __FlashStringHelper* fileName);
 
