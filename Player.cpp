@@ -101,7 +101,7 @@ void Player::on() {
 
 
 void Player::off() {
-  if (state >= Paused ) {
+  if (state >= Paused) {
     state = Busy;
     stopTrack();
   }

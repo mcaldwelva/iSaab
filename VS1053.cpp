@@ -106,7 +106,7 @@ void VS1053::playTrack() {
   uint8_t *buffer;
 
   // send data until the track is closed
-  while (audio) {
+  while (audio && state >= Paused) {
     if (state >= Playing) {
       uint16_t bytesRead = audio.readBlock(buffer);
       if (bytesRead) {
@@ -213,9 +213,7 @@ bool VS1053::loadPlugin(const __FlashStringHelper* fileName) {
 // send data to the coproc
 void VS1053::sendData(uint8_t data[], uint16_t len) {
   while (len > 0) {
-    while (!readyForData()) {
-      if (state <= Busy) return;
-    }
+    while (!readyForData());
 
     SPI.beginTransaction(VS1053_SDI_SETTING);
     fastDigitalWrite(VS1053_XDCS, LOW);
