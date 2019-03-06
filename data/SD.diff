@@ -21,3 +21,15 @@ diff -ru ./SD/src/utility/SdFile.cpp ~/SD/src/utility/SdFile.cpp
        // only upper case allowed in 8.3 names - convert lower to upper
        name[i++] = c < 'a' || c > 'z' ?  c : c + ('A' - 'a');
      }
+diff -ru ./SD/src/utility/SdFat.h ~/SD/src/utility/SdFat.h
+--- ./SD/src/utility/SdFat.h    2018-11-22 08:48:46.000000000 -0500
++++ ~/SD/src/utility/SdFat.h    2019-03-06 13:46:44.003390600 -0500
+@@ -386,7 +386,7 @@
+
+   // private data
+   uint8_t   flags_;         // See above for definition of flags_ bits
+-  uint8_t   type_;          // type of file see above for values
++  volatile uint8_t type_;   // type of file see above for values
+   uint32_t  curCluster_;    // cluster for current file position
+   uint32_t  curPosition_;   // current file position in bytes from beginning
+   uint32_t  dirBlock_;      // SD block that contains directory entry for file

@@ -106,7 +106,7 @@ void VS1053::playTrack() {
   uint8_t *buffer;
 
   // send data until the track is closed
-  while (audio && state >= Paused) {
+  while (audio) {
     if (state >= Playing) {
       uint16_t bytesRead = audio.readBlock(buffer);
       if (bytesRead) {

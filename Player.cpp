@@ -46,7 +46,10 @@ void Player::begin() {
     // read presets
     readPresets(F("PRESETS.TXT"));
 
-    state = Paused;
+    // promote ready state
+    if (state == Busy) {
+      state = Paused;
+    }
   }
 }
 
