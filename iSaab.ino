@@ -89,14 +89,14 @@ void powerRequest(CAN::msg &msg) {
 
   // handle power request
   switch (action) {
-    case 0x02: // active
+    case 0x2: // active
       msg.data[3] = 0x16;
       break;
-    case 0x03: // power on
+    case 0x3: // power on
       msg.data[3] = 0x03;
       cdc.on();
       break;
-    case 0x08: // power off
+    case 0x8: // power off
       msg.data[3] = 0x19;
       cdc.off();
       break;
@@ -112,13 +112,13 @@ void powerRequest(CAN::msg &msg) {
 
   // send rest of sequence
   switch (action) {
-    case 0x02: // active
+    case 0x2: // active
       msg.data[3] = 0x36;
       break;
-    case 0x03: // power on
+    case 0x3: // power on
       msg.data[3] = 0x22;
       break;
-    case 0x08: // power off
+    case 0x8: // power off
       msg.data[3] = 0x38;
       break;
   }

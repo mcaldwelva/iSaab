@@ -74,7 +74,7 @@ void Player::end() {
 
 // main playback loop
 void Player::play() {
-  if (state == Busy) {
+  if (state >= Busy) {
     begin();
 
     while (state >= Paused) {
@@ -112,18 +112,14 @@ void Player::off() {
 
 
 void Player::pause() {
-  if (state >= Playing) {
-    state = Paused;
-    updateText();
-  }
+  state = Paused;
+  updateText();
 }
 
 
 void Player::resume() {
-  if (state >= Busy) {
-    state = Playing;
-    updateText();
-  }
+  state = Playing;
+  updateText();
 }
 
 
