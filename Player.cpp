@@ -59,11 +59,12 @@ void Player::end() {
   // resume current track on start-up
   next = current;
 
-  // collapse path structure
+  // close SD card
   while (depth > 0) {
     path[depth--].h.close();
   }
   path[0].h.close();
+  SD.end();
 
   // turn off sound card
   VS1053::end();

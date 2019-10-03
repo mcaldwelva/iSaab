@@ -144,9 +144,9 @@ bool CAN::send(const msg &message) {
 // returns true if a message was received
 bool CAN::receive(msg &message) {
   uint8_t address;
+  uint8_t status = readStatus(SPI_RX_STATUS);
 
   // buffer 0 has the higher priority
-  uint8_t status = readStatus(SPI_RX_STATUS);
   if (bit_is_set(status, 6)) {
     // message in buffer 0
     address = 0x00;

@@ -30,8 +30,7 @@ String AudioFile::getTag(uint8_t tag) {
   if (tag < MAX_TAG_ID) {
     return tags[tag];
   } else {
-    String empty;
-    return empty;
+    return "";
   }
 }
 
@@ -256,7 +255,7 @@ void AudioFile::readAsf() {
       uint16_t artist_size = LE8x2(buffer);
 
       // Copyright + Description + Rating Length
-      read(buffer, 6);
+      seek(position() + 6);
 
       // Title
       uint32_t skip = position() + title_size;
