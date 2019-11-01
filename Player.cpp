@@ -175,7 +175,7 @@ void Player::prevTrack() {
 void Player::nextDisc() {
   if (repeatCount == 1) {
     if (shuffled) {
-      display.tag = ((display.tag & 0x7f) + 1) % (AudioFile::MAX_TAG_ID + 1);
+      display.tag = ((display.tag & 0x7f) + 1) % (AudioFile::NUM_TAGS + 1);
       updateText();
     } else {
       if (next == UNKNOWN) {

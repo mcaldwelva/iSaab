@@ -14,7 +14,7 @@
 class AudioFile : public File
 {
   public:
-    enum Tag : uint8_t { Title, Album, Band, Artist, Genre, Year, MAX_TAG_ID };
+    enum Tag : uint8_t { Title, Album, Band, Artist, Genre, Year, NUM_TAGS };
 
     AudioFile();
     AudioFile& operator=(const File &file);
@@ -31,7 +31,7 @@ class AudioFile : public File
   private:
     enum Type : uint8_t { FLAC, DSF, OTHER } type;
     uint8_t *buffer;
-    String tags[MAX_TAG_ID];
+    String tags[NUM_TAGS];
 
     void readTag(uint8_t tag, uint16_t ssize);
     void readId3Tags();

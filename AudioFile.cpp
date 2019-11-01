@@ -18,7 +18,7 @@ AudioFile& AudioFile::operator=(const File &file) {
 
   // reset properties
   type = OTHER;
-  for (uint8_t i = 0; i < MAX_TAG_ID; i++) {
+  for (uint8_t i = 0; i < NUM_TAGS; i++) {
     tags[i] = "";
   }
 
@@ -27,7 +27,7 @@ AudioFile& AudioFile::operator=(const File &file) {
 
 
 String AudioFile::getTag(uint8_t tag) {
-  if (tag < MAX_TAG_ID) {
+  if (tag < NUM_TAGS) {
     return tags[tag];
   } else {
     return "";
@@ -97,7 +97,7 @@ void AudioFile::readId3Tags() {
     uint32_t skip = position() + tag_size;
 
     // store it if it's one we care about
-    for (uint8_t i = 0; i < MAX_TAG_ID; i++) {
+    for (uint8_t i = 0; i < NUM_TAGS; i++) {
       if (ver >= 3 ? !strncasecmp_P(tag, (Id3v23Fields + i * ID3V23_ID), ID3V23_ID)
                    : !strncasecmp_P(tag, (Id3v20Fields + i * ID3V20_ID), ID3V20_ID)) {
         readTag(i, tag_size);
@@ -142,7 +142,7 @@ void AudioFile::readVorbisComments() {
     uint8_t delim = (uint16_t) memchr(buffer, '=', VORBIS_ID) - (uint16_t) &buffer + 1;
 
     // store it if it's one we care about
-    for (uint8_t i = 0; i < MAX_TAG_ID; i++) {
+    for (uint8_t i = 0; i < NUM_TAGS; i++) {
       if (!strncasecmp_P(buffer, (VorbisFields + i * VORBIS_ID), delim)) {
         seek(position() - (VORBIS_ID - delim));
         readTag(i, tag_size - delim);
@@ -192,7 +192,7 @@ int AudioFile::readFlac() {
 
 
 void AudioFile::readOgg() {
-  int seg_count;
+  uint8_t seg_count;
   uint16_t seg_size;
 
   // skip header info
@@ -300,7 +300,7 @@ void AudioFile::readAsf() {
         skip = position() + value_size;
 
         // store it if it's one we care about
-        for (uint8_t i = 0; i < MAX_TAG_ID; i++) {
+        for (uint8_t i = 0; i < NUM_TAGS; i++) {
           if (!strncmp_P(buffer, (AsfFields + i * ASF_ID), name_size)) {
             readTag(i, value_size);
             break;
@@ -355,7 +355,7 @@ void AudioFile::readQtff() {
       }
     } else {
       // read tag value
-      for (uint8_t i = 0; i < MAX_TAG_ID; i++) {
+      for (uint8_t i = 0; i < NUM_TAGS; i++) {
         if (!memcmp_P(buffer, (iTunesFields + i * QTFF_ID), QTFF_ID)) {
           // skip to 'data' value
           seek(position() + 16);
