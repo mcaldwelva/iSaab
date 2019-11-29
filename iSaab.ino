@@ -12,7 +12,6 @@
 #include "Player.h"
 #include "iSaab.h"
 
-CAN ibus;
 Player cdc;
 
 // one-time setup
@@ -21,7 +20,7 @@ void setup() {
   cdc.setup();
 
   // open I-Bus @ 47.619Kbps
-  ibus.begin(47, high_filters, low_filters);
+  CAN.begin(47, high_filters, low_filters);
 
   // use IRQ for incoming messages
   SPI.usingInterrupt(MCP2515_INT);
@@ -47,14 +46,14 @@ void loop() {
 // interrupt handler for incoming message
 void processMessage() {
   static uint8_t gap = 0;
-  CAN::msg msg;
+  CANClass::msg msg;
 
   if (gap == 0) {
-    ibus.setMode(CAN::Normal);
+    CAN.setMode(CANClass::Normal);
   }
 
   // if there's a message available
-  if (ibus.receive(msg)) {
+  if (CAN.receive(msg)) {
     // act on it
     switch (msg.id) {
       case RX_CDC_CONTROL:
@@ -75,13 +74,13 @@ void processMessage() {
   }
 
   if (gap == 0) {
-    ibus.setMode(CAN::ListenOnly);
+    CAN.setMode(CANClass::ListenOnly);
   }
 }
 
 
 inline __attribute__((always_inline))
-void powerRequest(CAN::msg &msg) {
+void powerRequest(CANClass::msg &msg) {
   uint8_t action = msg.data[3] & 0x0f;
 
   // reply id
@@ -108,7 +107,7 @@ void powerRequest(CAN::msg &msg) {
   msg.data[5] = 0x02;
   msg.data[6] = 0x00;
   msg.data[7] = 0x00;
-  while (!ibus.send(msg));
+  while (!CAN.send(msg));
 
   // send rest of sequence
   switch (action) {
@@ -126,13 +125,13 @@ void powerRequest(CAN::msg &msg) {
   msg.data[5] = 0x00;
   while (msg.data[0] < 0x62) {
     msg.data[0] += 0x10;
-    while (!ibus.send(msg));
+    while (!CAN.send(msg));
   }
 }
 
 
 inline __attribute__((always_inline))
-void controlRequest(CAN::msg &msg) {
+void controlRequest(CANClass::msg &msg) {
   // reply id
   msg.id = TX_CDC_CONTROL;
 
@@ -176,21 +175,21 @@ void controlRequest(CAN::msg &msg) {
 
   // get current status
   cdc.getStatus(msg.data);
-  while (!ibus.send(msg));
+  while (!CAN.send(msg));
 }
 
 
 inline __attribute__((always_inline))
-void displayRequest(CAN::msg &msg) {
+void displayRequest(CANClass::msg &msg) {
   char *text;
   int8_t wanted = cdc.getText(text);
 
   // check row
   if (msg.data[0] == 0x00) {
 #if (DEBUGMODE>=1)
-    uint8_t tec = ibus.getSendErrors();
-    uint8_t rec = ibus.getReceiveErrors();
-    uint8_t eflg = ibus.getErrorFlags();
+    uint8_t tec = CAN.getSendErrors();
+    uint8_t rec = CAN.getReceiveErrors();
+    uint8_t eflg = CAN.getErrorFlags();
     uint16_t mem = FreeRam();
 
     if (wanted == 13 || tec || rec || eflg) {
@@ -250,7 +249,7 @@ void displayRequest(CAN::msg &msg) {
               msg.data[6] = 0x00;
               msg.data[7] = 0x00;
             }
-            while (!ibus.send(msg));
+            while (!CAN.send(msg));
           }
 
           msg.data[2] = 0x05; // keep
@@ -275,6 +274,6 @@ void displayRequest(CAN::msg &msg) {
     msg.data[5] = 0x00;
     msg.data[6] = 0x00;
     msg.data[7] = 0x00;
-    while (!ibus.send(msg));
+    while (!CAN.send(msg));
   }
 }

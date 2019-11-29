@@ -12,8 +12,10 @@
 
 #define MCP2515_SPI_SETTING SPISettings(10000000, MSBFIRST, SPI_MODE0)
 
+CANClass CAN;
+
 // setup pins, set CAN bus speed, optionally set filters, begin accepting messages
-void CAN::begin(uint16_t speed, const uint16_t high[] PROGMEM, const uint16_t low[] PROGMEM) {
+void CANClass::begin(uint16_t speed, const uint16_t high[] PROGMEM, const uint16_t low[] PROGMEM) {
   pinMode(MCP2515_CS, OUTPUT);
   digitalWrite(MCP2515_CS, HIGH);
 
@@ -79,7 +81,7 @@ void CAN::begin(uint16_t speed, const uint16_t high[] PROGMEM, const uint16_t lo
 
 // transmit a message in FIFO order
 // returns true if buffered successfully
-bool CAN::send(const msg &message) {
+bool CANClass::send(const msg &message) {
   static uint8_t id;
   uint8_t status = readStatus(SPI_READ_STATUS);
 
@@ -142,7 +144,7 @@ bool CAN::send(const msg &message) {
 
 // read the highest priority message available and clear its buffer
 // returns true if a message was received
-bool CAN::receive(msg &message) {
+bool CANClass::receive(msg &message) {
   uint8_t address;
   uint8_t status = readStatus(SPI_RX_STATUS);
 
@@ -192,7 +194,7 @@ bool CAN::receive(msg &message) {
 
 
 // change the operating mode of the can chip
-void CAN::setMode(Mode mode) {
+void CANClass::setMode(Mode mode) {
   switch (mode) {
     case Normal:
       // transceiver on
@@ -230,7 +232,7 @@ void CAN::setMode(Mode mode) {
 // enable/disable standard id filtering
 // high: NULL for no filter or an array in PROGMEM containing 2 id's followed by a mask
 // low: NULL for no filter or an array in PROGMEM containing 4 id's followed by a mask
-void CAN::setFilters(const uint16_t high[] PROGMEM, const uint16_t low[] PROGMEM) {
+void CANClass::setFilters(const uint16_t high[] PROGMEM, const uint16_t low[] PROGMEM) {
   uint16_t filter;
   uint8_t flags;
 
@@ -292,7 +294,7 @@ void CAN::setFilters(const uint16_t high[] PROGMEM, const uint16_t low[] PROGMEM
 }
 
 
-void CAN::writeRegister( uint8_t address, uint8_t data ) {
+void CANClass::writeRegister( uint8_t address, uint8_t data ) {
   SPI.beginTransaction(MCP2515_SPI_SETTING);
   fastDigitalWrite(MCP2515_CS, LOW);
 
@@ -305,7 +307,7 @@ void CAN::writeRegister( uint8_t address, uint8_t data ) {
 }
 
 
-uint8_t CAN::readStatus(uint8_t type) {
+uint8_t CANClass::readStatus(uint8_t type) {
   uint8_t data;
 
   SPI.beginTransaction(MCP2515_SPI_SETTING);
@@ -321,7 +323,7 @@ uint8_t CAN::readStatus(uint8_t type) {
 }
 
 
-void CAN::modifyRegister(uint8_t address, uint8_t mask, uint8_t data) {
+void CANClass::modifyRegister(uint8_t address, uint8_t mask, uint8_t data) {
   SPI.beginTransaction(MCP2515_SPI_SETTING);
   fastDigitalWrite(MCP2515_CS, LOW);
 
@@ -335,7 +337,7 @@ void CAN::modifyRegister(uint8_t address, uint8_t mask, uint8_t data) {
 }
 
 
-uint8_t CAN::readRegister(uint8_t address) {
+uint8_t CANClass::readRegister(uint8_t address) {
   uint8_t data;
 
   SPI.beginTransaction(MCP2515_SPI_SETTING);
@@ -353,11 +355,11 @@ uint8_t CAN::readRegister(uint8_t address) {
 
 
 inline __attribute__((always_inline))
-uint8_t CAN::spiread() {
+uint8_t CANClass::spiread() {
   return SPI.transfer(0x00);
 }
 
 inline __attribute__((always_inline))
-void CAN::spiwrite(uint8_t c) {
+void CANClass::spiwrite(uint8_t c) {
   SPI.transfer(c);
 }
