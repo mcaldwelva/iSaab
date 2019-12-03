@@ -173,8 +173,48 @@ void controlRequest(CANClass::msg &msg) {
       break;
   }
 
-  // get current status
-  cdc.getStatus(msg.data);
+  // married, RDM
+  msg.data[7] = 0xd0;
+  if (cdc.isShuffled()) msg.data[7] |= 0x20;
+
+  // seconds
+  uint16_t time = cdc.getTime();
+  uint8_t sec = time % 60;
+  msg.data[6] = sec / 10;
+  msg.data[6] <<= 4;
+  msg.data[6] |= sec % 10;
+
+  // minutes
+  uint8_t min = time / 60;
+  msg.data[5] = (min / 10) % 10;
+  msg.data[5] <<= 4;
+  msg.data[5] |= min % 10;
+
+  // track
+  uint8_t track = cdc.getTrack() + 1;
+  msg.data[4] = (track / 10) % 10;
+  msg.data[4] <<= 4;
+  msg.data[4] |= track % 10;
+
+  // play status, disc
+  msg.data[3] = cdc.getState() & 0xf0;
+  msg.data[3] |= cdc.getDisc() % 6 + 1;
+
+  // magazine
+  msg.data[2] = 0b00111111;
+
+  // ready
+  msg.data[0] = 0x20;
+
+  // reply, changed
+  static uint8_t last[4] = {0x02, 0x01, 0x00, 0x00};
+  if (msg.data[1] || memcmp(last, (msg.data + 3), sizeof(last))) {
+    if (msg.data[1]) msg.data[0] |= 0x40;
+    msg.data[0] |= 0x80;
+    memcpy(last, (msg.data + 3), sizeof(last));
+  }
+
+  msg.data[1] = 0x00;
   while (!CAN.send(msg));
 }
 

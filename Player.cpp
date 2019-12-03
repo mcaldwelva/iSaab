@@ -1,8 +1,7 @@
 /*
  *  Player extends VS1053 audio file playback to an entire file system
- *   - Folders are serached in depth-first order
+ *   - Folders are searched in depth-first order
  *   - Files are played in file system order
- *   - Emulates Saab CD changer behaviors
  *
  */
 
@@ -125,6 +124,8 @@ void Player::resume() {
 
 
 void Player::shuffle() {
+  repeatCount++;
+
   if (repeatCount == 1) {
     shuffled = !shuffled;
   }
@@ -132,6 +133,8 @@ void Player::shuffle() {
 
 
 void Player::nextTrack() {
+  repeatCount++;
+
   if (shuffled) {
     if (next == UNKNOWN) {
       do { next = xorshift(path[depth].first, path[depth].last + 500); } while (next == current);
@@ -151,6 +154,8 @@ void Player::nextTrack() {
 
 
 void Player::prevTrack() {
+  repeatCount++;
+
   if (shuffled || repeatCount == 1 && trackTime()) {
     // start this track over again
     next = current;
@@ -173,6 +178,8 @@ void Player::prevTrack() {
 
 
 void Player::nextDisc() {
+  repeatCount++;
+
   if (repeatCount == 1) {
     if (shuffled) {
       display.tag = ((display.tag & 0x7f) + 1) % (AudioFile::NUM_TAGS + 1);
@@ -213,6 +220,8 @@ void Player::readPresets(const __FlashStringHelper* fileName) {
 
 
 void Player::preset(uint8_t memory) {
+  repeatCount++;
+
   if (repeatCount == 1) {
     if (shuffled) {
       if (memory == (display.tag & 0x7f)) {
@@ -232,6 +241,8 @@ void Player::preset(uint8_t memory) {
 
 
 void Player::rewind() {
+  repeatCount++;
+
   if (state != Rapid) {
     state = Rapid;
     updateText();
@@ -242,6 +253,8 @@ void Player::rewind() {
 
 
 void Player::forward() {
+  repeatCount++;
+
   if (state != Rapid) {
     state = Rapid;
     updateText();
@@ -252,94 +265,12 @@ void Player::forward() {
 
 
 void Player::normal() {
+  repeatCount = 0;
+
   if (state == Rapid) {
     state = Playing;
     updateText();
   }
-
-  repeatCount = 0;
-}
-
-
-// gather player status for Saab
-void Player::getStatus(uint8_t data[]) {
-  uint16_t time;
-  uint8_t track;
-  uint8_t disc;
-
-  // keep track of repeated commands
-  repeatCount++;
-
-  // gather track information
-  if (next == UNKNOWN) {
-    // playing current track
-    time = trackTime();
-    track = current - path[depth].first + 1;
-    disc = path[depth].folder;
-  }
-  else if (next >= path[depth].last) {
-    // new track is on the next disc
-    time = 0;
-    track = next - path[depth].last + 1;
-    disc = path[depth].folder + 1;
-  }
-  else if (next < path[depth].first) {
-    // new track is on the previous disc
-    time = 0;
-    track = 100 - (current - next);
-    disc = path[depth].folder - 1;
-  }
-  else {
-    // new track is on the current disc
-    time = 0;
-    track = next - path[depth].first + 1;
-    disc = path[depth].folder;
-  }
-
-  // married
-  data[7] = 0xd0;
-
-  // random
-  if (shuffled) data[7] |= 0x20;
-
-  // seconds
-  uint8_t sec = time % 60;
-  data[6] = sec / 10;
-  data[6] <<= 4;
-  data[6] |= sec % 10;
-
-  // minutes
-  uint8_t min = time / 60;
-  data[5] = (min / 10) % 10;
-  data[5] <<= 4;
-  data[5] |= min % 10;
-
-  // track
-  data[4] = (track / 10) % 10;
-  data[4] <<= 4;
-  data[4] |= track % 10;
-
-  // play status
-  data[3] = state & 0xf0;
-
-  // disc
-  data[3] |= disc % 6 + 1;
-
-  // full magazine
-  data[2] = 0b00111111;
-
-  // ready
-  data[0] = 0x20;
-
-  // reply, changed
-  static uint8_t last[4] = {0x02, 0x01, 0x00, 0x00};
-  if (data[1] || memcmp(last, (data + 3), sizeof(last))) {
-    if (data[1]) data[0] |= 0x40;
-    data[0] |= 0x80;
-    memcpy(last, (data + 3), sizeof(last));
-  }
-
-  data[1] = 0x00;
 }
 
 

@@ -18,6 +18,7 @@ class Player : private VS1053
     void on();
     void off();
 
+    // operations
     void play();
     void pause();
     void resume();
@@ -30,7 +31,62 @@ class Player : private VS1053
     void nextDisc();
     void preset(uint8_t memory);
 
-    void getStatus(uint8_t data[]);
+    // status
+    State getState() { return state; };
+    bool isShuffled() { return shuffled; };
+
+    uint16_t getTime() {
+      uint16_t ret;
+
+      if (next == UNKNOWN) {
+        ret = trackTime();
+      } else {
+        ret = 0;
+      }
+
+      return ret;
+    };
+
+    uint8_t getTrack() {
+      uint8_t ret;
+
+      if (next == UNKNOWN) {
+        // track is on the current disc
+        ret = current - path[depth].first;
+      } else if (next >= path[depth].last) {
+        // new track is on the next disc
+        ret = next - path[depth].last;
+      } else if (next < path[depth].first) {
+        // new track is on the previous disc
+        ret = 99 - (current - next);
+      } else {
+        // new track is on the current disc
+        ret = next - path[depth].first;
+      }
+
+      return ret;
+    };
+
+    uint8_t getDisc() {
+      uint8_t ret;
+
+      if (next == UNKNOWN) {
+        // track is on the current disc
+        ret = path[depth].folder;
+      } else if (next >= path[depth].last) {
+        // new track is on the next disc
+        ret = path[depth].folder + 1;
+      } else if (next < path[depth].first) {
+        // new track is on the previous disc
+        ret = path[depth].folder - 1;
+      } else {
+        // new track is on the current disc
+        ret = path[depth].folder;
+      }
+
+      return ret;
+    };
+
     int getText(char *&buf);
 
   private:
