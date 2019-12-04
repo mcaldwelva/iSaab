@@ -34,18 +34,7 @@ class Player : private VS1053
     // status
     State getState() { return state; };
     bool isShuffled() { return shuffled; };
-
-    uint16_t getTime() {
-      uint16_t ret;
-
-      if (next == UNKNOWN) {
-        ret = trackTime();
-      } else {
-        ret = 0;
-      }
-
-      return ret;
-    };
+    uint16_t getTime() { return trackTime(); };
 
     uint8_t getTrack() {
       uint8_t ret;

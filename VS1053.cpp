@@ -160,8 +160,14 @@ void VS1053::skip(int16_t secs) {
 
 // get approximate track position in seconds
 uint16_t VS1053::trackTime() {
-  uint16_t ret = sciRead(SCI_DECODETIME);
-  ret += skippedTime;
+  uint16_t ret;
+
+  if (audio) {
+    ret = sciRead(SCI_DECODETIME) + skippedTime;
+  } else {
+    ret = 0;
+  }
+
   return ret;
 }
 
