@@ -153,10 +153,18 @@ void controlRequest(CANClass::msg &msg) {
       cdc.rewind();
       break;
     case 0x59: // NXT
-      cdc.nextDisc();
+      if (cdc.isShuffled()) {
+        cdc.nextText();
+      } else {
+        cdc.nextDisc();
+      }
       break;
     case 0x68: // 1 - 6
-      cdc.preset(msg.data[2]);
+      if (cdc.isShuffled()) {
+        cdc.text(msg.data[2] - 1);
+      } else {
+        cdc.preset(msg.data[2] - 1);
+      }
       break;
     case 0x76: // RDM toggle
       cdc.shuffle();
@@ -221,18 +229,18 @@ void controlRequest(CANClass::msg &msg) {
 
 inline __attribute__((always_inline))
 void displayRequest(CANClass::msg &msg) {
-  char *text;
-  int8_t wanted = cdc.getText(text);
-
   // check row
   if (msg.data[0] == 0x00) {
+    String text;
+    bool reset;
+
 #if (DEBUGMODE>=1)
     uint8_t tec = CAN.getSendErrors();
     uint8_t rec = CAN.getReceiveErrors();
     uint8_t eflg = CAN.getErrorFlags();
     uint16_t mem = FreeRam();
 
-    if (wanted == 13 || tec || rec || eflg) {
+    if (tec || rec || eflg) {
       text[0]  = 'T';
       text[3]  = (tec % 10) + '0'; tec /= 10;
       text[2]  = (tec % 10) + '0'; tec /= 10;
@@ -256,11 +264,15 @@ void displayRequest(CANClass::msg &msg) {
       text[20] = eflg & _BV(2) ? 't' : ' ';
       text[21] = eflg & _BV(1) ? 'r' : ' ';
       text[22] = eflg & _BV(0) ? 'e' : ' ';
-      text[23] = wanted = 13;
-    }
-#endif
+      text[23] = ' ';
 
-    if (wanted) {
+      cdc.text(AudioFile::NUM_TAGS * 2);
+      reset = true;
+    } else
+#endif
+    { reset = cdc.getText(text); }
+
+    if (text.length()) {
       // check owner
       switch (msg.data[1]) {
         case 0x12: // iSaab
@@ -275,7 +287,7 @@ void displayRequest(CANClass::msg &msg) {
 
             // row id, new text flag
             msg.data[2] = (id < 3) ? 2 : 1;
-            if (wanted < 0) msg.data[2] |= 0x80;
+            if (reset) msg.data[2] |= 0x80;
 
             // copy text
             msg.data[3] = text[i++];
