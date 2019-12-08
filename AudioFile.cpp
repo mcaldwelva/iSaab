@@ -26,15 +26,6 @@ AudioFile& AudioFile::operator=(const File &file) {
 }
 
 
-String AudioFile::getTag(uint8_t tag) {
-  if (tag < NUM_TAGS) {
-    return tags[tag];
-  } else {
-    return "";
-  }
-}
-
-
 // read ascii tag value directly from buffer
 void AudioFile::readTag(uint8_t tag, uint16_t ssize) {
   uint16_t j = position() % 512;
@@ -222,6 +213,7 @@ void AudioFile::readOgg() {
 }
 
 
+inline __attribute__((noinline))
 void AudioFile::readAsf() {
   char buffer[GUID];
 

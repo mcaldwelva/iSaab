@@ -76,7 +76,10 @@ class Player : private VS1053
       return ret;
     };
 
-    int getText(char *&buf);
+    // display
+    void nextText();
+    void text(uint8_t id);
+    bool getText(String &text);
 
   private:
     void begin();
@@ -91,11 +94,8 @@ class Player : private VS1053
     uint8_t repeatCount;
 
     // display stuff
-    void updateText();
-    struct {
-      char text[23];
-      volatile int8_t tag;
-    } display;
+    uint8_t tag;
+    bool updated;
 
     // filesystem stuff
     struct {

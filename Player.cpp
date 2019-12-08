@@ -26,6 +26,9 @@ void Player::setup() {
     t |= analogRead(0) & 1;
   }
   seed = t ? t : 1;
+
+  // initialize display
+  tag = AudioFile::NUM_TAGS;
 }
 
 
@@ -83,12 +86,8 @@ void Player::play() {
         nextTrack();
       }
       openNextTrack();
-
       startTrack();
-      updateText();
-
       playTrack();
-      updateText();
     }
 
     end();
@@ -113,13 +112,11 @@ void Player::off() {
 
 void Player::pause() {
   state = Paused;
-  updateText();
 }
 
 
 void Player::resume() {
   state = Playing;
-  updateText();
 }
 
 
@@ -180,16 +177,9 @@ void Player::prevTrack() {
 void Player::nextDisc() {
   repeatCount++;
 
-  if (repeatCount == 1) {
-    if (shuffled) {
-      display.tag = ((display.tag & 0x7f) + 1) % (AudioFile::NUM_TAGS + 1);
-      updateText();
-    } else {
-      if (next == UNKNOWN) {
-        next = path[depth].last;
-        stopTrack();
-      }
-    }
+  if (repeatCount == 1 && next == UNKNOWN) {
+    next = path[depth].last;
+    stopTrack();
   }
 }
 
@@ -222,20 +212,9 @@ void Player::readPresets(const __FlashStringHelper* fileName) {
 void Player::preset(uint8_t memory) {
   repeatCount++;
 
-  if (repeatCount == 1) {
-    if (shuffled) {
-      if (memory == (display.tag & 0x7f)) {
-        display.tag = 0;
-      } else {
-        display.tag = memory;
-      }
-      updateText();
-    } else {
-      if (next == UNKNOWN) {
-        next = presets[memory - 1];
-        stopTrack();
-      }
-    }
+  if (repeatCount == 1 && next == UNKNOWN) {
+    next = presets[memory];
+    stopTrack();
   }
 }
 
@@ -245,7 +224,6 @@ void Player::rewind() {
 
   if (state != Rapid) {
     state = Rapid;
-    updateText();
   }
 
   skip(-repeatCount);
@@ -257,7 +235,6 @@ void Player::forward() {
 
   if (state != Rapid) {
     state = Rapid;
-    updateText();
   }
 
   skip(repeatCount);
@@ -269,39 +246,46 @@ void Player::normal() {
 
   if (state == Rapid) {
     state = Playing;
-    updateText();
   }
 }
 
 
-// get text for display
-int Player::getText(char *&buf) {
-  int ret = display.text[0] ? display.tag : 0;
-  display.tag &= 0x7f;
-  buf = display.text;
+void Player::nextText() {
+  repeatCount++;
+
+  if (repeatCount == 1) {
+    tag = (tag + 1) % (AudioFile::NUM_TAGS + 1);
+    updated = true;
+  }
+}
+
+
+void Player::text(uint8_t id) {
+  repeatCount++;
+
+  if (repeatCount == 1) {
+      if (id == tag) {
+        tag = AudioFile::NUM_TAGS;
+      } else {
+        tag = id;
+        updated = true;
+      }
+  }
+}
+
+
+bool Player::getText(String &text) {
+  bool ret = updated;
+
+  if (audio && state == Playing && tag < AudioFile::NUM_TAGS) {
+    updated = false;
+    text = audio.getTag(tag);
+  } else {
+    updated = true;
+    text = "";
+  }
+
   return ret;
-}
-
-
-// prepare text for Saab display
-void Player::updateText() {
-  uint8_t i, j;
-  String text;
-
-  if (audio && state == Playing) {
-    text = audio.getTag((display.tag & 0x7f) - 1);
-  }
-
-  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-    for (i = 0, j = 0; i < 12; i++, j++) {
-      display.text[i] = text[j];
-    }
-    if (text[j] == 0x20) j++;
-    for (; i < 23; i++, j++) {
-      display.text[i] = text[j];
-    }
-    display.tag |= 0x80;
-  }
 }
 
 
