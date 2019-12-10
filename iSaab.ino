@@ -231,7 +231,7 @@ inline __attribute__((always_inline))
 void displayRequest(CANClass::msg &msg) {
   // check row
   if (msg.data[0] == 0x00) {
-    String text;
+    static char text[MAX_TAG_LENGTH];
     bool reset;
 
 #if (DEBUGMODE>=1)
@@ -264,7 +264,7 @@ void displayRequest(CANClass::msg &msg) {
       text[20] = eflg & _BV(2) ? 't' : ' ';
       text[21] = eflg & _BV(1) ? 'r' : ' ';
       text[22] = eflg & _BV(0) ? 'e' : ' ';
-      text[23] = ' ';
+      text[23] = AudioFile::NUM_TAGS + 1;
 
       cdc.text(AudioFile::NUM_TAGS * 2);
       reset = true;
@@ -272,7 +272,7 @@ void displayRequest(CANClass::msg &msg) {
 #endif
     { reset = cdc.getText(text); }
 
-    if (text.length()) {
+    if (text[0] != 0) {
       // check owner
       switch (msg.data[1]) {
         case 0x12: // iSaab

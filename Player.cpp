@@ -274,15 +274,28 @@ void Player::text(uint8_t id) {
 }
 
 
-bool Player::getText(String &text) {
+bool Player::getText(char dst[MAX_TAG_LENGTH]) {
   bool ret = updated;
 
   if (audio && state == Playing && tag < AudioFile::NUM_TAGS) {
-    updated = false;
-    text = audio.getTag(tag);
+    if (updated) {
+      updated = false;
+
+      // copy display text
+      uint8_t i = 0, j = 0;
+      String src = audio.getTag(tag);
+      for (; i < (MAX_TAG_LENGTH / 2); i++, j++) {
+        dst[i] = src[j];
+      }
+      if (src[j] == ' ') j++;
+      for (; i < MAX_TAG_LENGTH - 1; i++, j++) {
+        dst[i] = src[j];
+      }
+      dst[i] = tag + 1;
+    }
   } else {
     updated = true;
-    text = "";
+    dst[0] = 0;
   }
 
   return ret;

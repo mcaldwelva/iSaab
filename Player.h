@@ -79,7 +79,7 @@ class Player : private VS1053
     // display
     void nextText();
     void text(uint8_t id);
-    bool getText(String &text);
+    bool getText(char dst[MAX_TAG_LENGTH]);
 
   private:
     void begin();
