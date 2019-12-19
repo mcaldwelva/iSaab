@@ -21,8 +21,8 @@ class AudioFile : public File
     int readMetadata(uint8_t *&buf);
     int readBlock(uint8_t *&buf);
     bool jump(int16_t secs, uint16_t rate);
-    bool isHighBitRate() { return type == FLAC || type == DSF; };
-    String &getTag(Tag tag) { return tags[tag]; };
+    bool isHighBitRate() { return type == FLAC || type == DSF; }
+    const String &getTag(uint8_t tag) { return tags[tag]; }
 
     uint8_t *fillBuffer(uint8_t value, uint8_t num) {
       return (uint8_t *) memset(buffer, value, num);

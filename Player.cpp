@@ -85,7 +85,7 @@ void Player::play() {
       if (next == UNKNOWN) {
         nextTrack();
       }
-      openNextTrack();
+      openTrack();
       startTrack();
       playTrack();
     }
@@ -283,7 +283,7 @@ bool Player::getText(char dst[MAX_TAG_LENGTH]) {
 
       // copy display text
       uint8_t i = 0, j = 0;
-      String src = audio.getTag(tag);
+      const String src = audio.getTag(tag);
       for (; i < (MAX_TAG_LENGTH / 2); i++, j++) {
         dst[i] = src[j];
       }
@@ -303,7 +303,7 @@ bool Player::getText(char dst[MAX_TAG_LENGTH]) {
 
 
 // find the new track number on the file system
-void Player::openNextTrack() {
+void Player::openTrack() {
   static bool hasFolders;
 
   // go back to the closest starting point

@@ -84,7 +84,7 @@ class Player : private VS1053
   private:
     void begin();
     void end();
-    void openNextTrack();
+    void openTrack();
     void readPresets(const __FlashStringHelper* fileName);
 
     uint16_t current;

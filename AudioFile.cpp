@@ -10,6 +10,10 @@
 
 AudioFile::AudioFile() {
   buffer = SdVolume::cacheClear();
+
+  for (uint8_t i = 0; i < NUM_TAGS; i++) {
+    tags[i].reserve(MAX_TAG_LENGTH);
+  }
 }
 
 
@@ -18,6 +22,7 @@ AudioFile& AudioFile::operator=(const File &file) {
 
   // reset properties
   type = OTHER;
+
   for (uint8_t i = 0; i < NUM_TAGS; i++) {
     tags[i] = "";
   }

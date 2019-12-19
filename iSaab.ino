@@ -238,9 +238,10 @@ void displayRequest(CANClass::msg &msg) {
     uint8_t tec = CAN.getSendErrors();
     uint8_t rec = CAN.getReceiveErrors();
     uint8_t eflg = CAN.getErrorFlags();
-    uint16_t mem = FreeRam();
 
     if (tec || rec || eflg) {
+      uint16_t mem = FreeRam();
+
       text[0]  = 'T';
       text[3]  = (tec % 10) + '0'; tec /= 10;
       text[2]  = (tec % 10) + '0'; tec /= 10;
