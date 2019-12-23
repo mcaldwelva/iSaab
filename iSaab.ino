@@ -135,6 +135,9 @@ void controlRequest(CANClass::msg &msg) {
   // reply id
   msg.id = TX_CDC_CONTROL;
 
+  // changed, ready, reply
+  msg.data[0] = 0xE0;
+
   // map CDC commands to methods
   switch (msg.data[1]) {
     case 0x00: // no command
@@ -179,24 +182,19 @@ void controlRequest(CANClass::msg &msg) {
     case 0x88: // SCAN magazine
       cdc.resume();
       break;
+    default: // no command
+      msg.data[0] = 0x20;
+      break;
   }
 
-  // married, RDM
-  msg.data[7] = 0xd0;
-  if (cdc.isShuffled()) msg.data[7] |= 0x20;
+  msg.data[1] = 0x00;
 
-  // seconds
-  uint16_t time = cdc.getTime();
-  uint8_t sec = time % 60;
-  msg.data[6] = sec / 10;
-  msg.data[6] <<= 4;
-  msg.data[6] |= sec % 10;
+  // magazine
+  msg.data[2] = 0b00111111;
 
-  // minutes
-  uint8_t min = time / 60;
-  msg.data[5] = (min / 10) % 10;
-  msg.data[5] <<= 4;
-  msg.data[5] |= min % 10;
+  // play status, disc
+  msg.data[3] = cdc.getState() & 0xf0;
+  msg.data[3] |= cdc.getDisc() % 6 + 1;
 
   // track
   uint8_t track = cdc.getTrack() + 1;
@@ -204,25 +202,30 @@ void controlRequest(CANClass::msg &msg) {
   msg.data[4] <<= 4;
   msg.data[4] |= track % 10;
 
-  // play status, disc
-  msg.data[3] = cdc.getState() & 0xf0;
-  msg.data[3] |= cdc.getDisc() % 6 + 1;
+  // minutes
+  uint16_t time = cdc.getTime();
+  uint8_t min = time / 60;
+  msg.data[5] = (min / 10) % 10;
+  msg.data[5] <<= 4;
+  msg.data[5] |= min % 10;
 
-  // magazine
-  msg.data[2] = 0b00111111;
+  // seconds
+  uint8_t sec = time % 60;
+  msg.data[6] = sec / 10;
+  msg.data[6] <<= 4;
+  msg.data[6] |= sec % 10;
 
-  // ready
-  msg.data[0] = 0x20;
+  // married, RDM
+  msg.data[7] = 0xd0;
+  if (cdc.isShuffled()) msg.data[7] |= 0x20;
 
-  // reply, changed
+  // flag disc, track, or time change due to normal playback
   static uint8_t last[4] = {0x02, 0x01, 0x00, 0x00};
-  if (msg.data[1] || memcmp(last, (msg.data + 3), sizeof(last))) {
-    if (msg.data[1]) msg.data[0] |= 0x40;
+  if (memcmp(last, (msg.data + 3), sizeof(last))) {
     msg.data[0] |= 0x80;
     memcpy(last, (msg.data + 3), sizeof(last));
   }
 
-  msg.data[1] = 0x00;
   while (!CAN.send(msg));
 }
 

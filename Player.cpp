@@ -87,6 +87,7 @@ void Player::play() {
       }
       openTrack();
       startTrack();
+      updated = true;
       playTrack();
     }
 

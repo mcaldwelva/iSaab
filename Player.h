@@ -95,7 +95,7 @@ class Player : private VS1053
 
     // display stuff
     uint8_t tag;
-    bool updated;
+    volatile bool updated;
 
     // filesystem stuff
     struct {
