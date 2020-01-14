@@ -14,7 +14,7 @@
 
 Player cdc;
 uint8_t tag = AudioFile::NUM_TAGS;
-
+bool reset;
 
 // one-time setup
 void setup() {
@@ -179,6 +179,7 @@ void controlRequest(CANClass::msg &msg) {
       if (repeatCount == 1) {
         if (cdc.isShuffled()) {
           tag = (tag + 1) % (AudioFile::NUM_TAGS + 1);
+          reset = true;
         } else {
           cdc.nextDisc();
         }
@@ -188,6 +189,7 @@ void controlRequest(CANClass::msg &msg) {
       if (repeatCount == 1) {
         if (cdc.isShuffled()) {
           tag = (msg.data[2] - 1 == tag) ? AudioFile::NUM_TAGS : msg.data[2] - 1;
+          reset = true;
         } else {
           cdc.preset(msg.data[2] - 1);
         }
@@ -247,6 +249,7 @@ void controlRequest(CANClass::msg &msg) {
   static uint8_t last[4] = {0x02, 0x01, 0x00, 0x00};
   if (memcmp(last, (msg.data + 3), sizeof(last))) {
     msg.data[0] |= 0x80;
+    if (time == 1) reset = true;
     memcpy(last, (msg.data + 3), sizeof(last));
   }
 
@@ -273,7 +276,7 @@ void displayRequest(CANClass::msg &msg) {
 
             // row id, new text flag
             msg.data[2] = (id < 3) ? 2 : 1;
-            msg.data[2] |= 0x80;
+            if (reset) msg.data[2] |= 0x80;
 
             // copy text
             msg.data[3] = text[i++];
@@ -301,6 +304,7 @@ void displayRequest(CANClass::msg &msg) {
             sendMessage(msg);
           }
 
+          reset = false;
           msg.data[2] = 0x05; // keep
           break;
         case 0xff: // available
@@ -312,6 +316,7 @@ void displayRequest(CANClass::msg &msg) {
       }
     } else {
       msg.data[2] = 0xff; // decline
+      reset = true;
     }
 
     // display request

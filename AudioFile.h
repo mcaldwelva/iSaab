@@ -24,8 +24,9 @@ class AudioFile : public File
     int readBlock(uint8_t *&buf);
     bool jump(int16_t secs, uint16_t rate);
     bool isHighBitRate() { return type == FLAC || type == DSF; }
-    const String &getTag(uint8_t tag) { return tags[tag]; }
-
+    const String &getTag(uint8_t tag) {
+      return tags[ tag < NUM_TAGS ? tag : NUM_TAGS ];
+    }
     uint8_t *fillBuffer(uint8_t value, uint8_t num) {
       return (uint8_t *) memset(buffer, value, num);
     }
@@ -33,7 +34,7 @@ class AudioFile : public File
   private:
     enum Type : uint8_t { FLAC, DSF, OTHER } type;
     uint8_t *buffer;
-    String tags[NUM_TAGS];
+    String tags[NUM_TAGS + 1];
 
     void readTag(uint8_t tag, uint16_t ssize);
     void readId3Tags();
