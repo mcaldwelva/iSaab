@@ -26,9 +26,6 @@ void Player::setup() {
     t |= analogRead(0) & 1;
   }
   seed = t ? t : 1;
-
-  // initialize display
-  tag = AudioFile::NUM_TAGS;
 }
 
 
@@ -83,11 +80,10 @@ void Player::play() {
     while (state >= Paused) {
       // get the next track if one hasn't already been selected
       if (next == UNKNOWN) {
-        nextTrack();
+        skipTrack(1);
       }
       openTrack();
       startTrack();
-      updated = true;
       playTrack();
     }
 
@@ -122,48 +118,29 @@ void Player::resume() {
 
 
 void Player::shuffle() {
-  repeatCount++;
-
-  if (repeatCount == 1) {
-    shuffled = !shuffled;
-  }
+  shuffled = !shuffled;
 }
 
 
-void Player::nextTrack() {
-  repeatCount++;
-
+void Player::skipTrack(int8_t sign) {
   if (shuffled) {
-    if (next == UNKNOWN) {
-      do { next = xorshift(path[depth].first, path[depth].last + 500); } while (next == current);
+    if (sign > 0) {
+      if (next == UNKNOWN) {
+        do { next = xorshift(path[depth].first, path[depth].last + 500); } while (next == current);
+      }
+    } else {
+      next = current;
     }
   } else {
-      // if no track is queued up
-      if (next == UNKNOWN) {
-        next = current + 1;
-      } else {
-        // keep skipping
-        next++;
-      }
-  }
-
-  stopTrack();
-}
-
-
-void Player::prevTrack() {
-  repeatCount++;
-
-  if (shuffled || repeatCount == 1 && trackTime()) {
-    // start this track over again
-    next = current;
-  } else {
-    // if no track is queued up
     if (next == UNKNOWN) {
-      next = current - 1;
-    } else {
-      // keep skipping
+      next = current;
+    }
+    if (sign > 0) {
+      next++;
+    } else if (sign < 0) {
       next--;
+    } else {
+      next = current;
     }
   }
 
@@ -176,9 +153,7 @@ void Player::prevTrack() {
 
 
 void Player::nextDisc() {
-  repeatCount++;
-
-  if (repeatCount == 1 && next == UNKNOWN) {
+  if (next == UNKNOWN) {
     next = path[depth].last;
     stopTrack();
   }
@@ -211,95 +186,26 @@ void Player::readPresets(const __FlashStringHelper* fileName) {
 
 
 void Player::preset(uint8_t memory) {
-  repeatCount++;
-
-  if (repeatCount == 1 && next == UNKNOWN) {
+  if (next == UNKNOWN) {
     next = presets[memory];
     stopTrack();
   }
 }
 
 
-void Player::rewind() {
-  repeatCount++;
-
+void Player::skipTime(int8_t seconds) {
   if (state != Rapid) {
     state = Rapid;
   }
 
-  skip(-repeatCount);
-}
-
-
-void Player::forward() {
-  repeatCount++;
-
-  if (state != Rapid) {
-    state = Rapid;
-  }
-
-  skip(repeatCount);
+  skip(seconds);
 }
 
 
 void Player::normal() {
-  repeatCount = 0;
-
   if (state == Rapid) {
     state = Playing;
   }
-}
-
-
-void Player::nextText() {
-  repeatCount++;
-
-  if (repeatCount == 1) {
-    tag = (tag + 1) % (AudioFile::NUM_TAGS + 1);
-    updated = true;
-  }
-}
-
-
-void Player::text(uint8_t id) {
-  repeatCount++;
-
-  if (repeatCount == 1) {
-      if (id == tag) {
-        tag = AudioFile::NUM_TAGS;
-      } else {
-        tag = id;
-        updated = true;
-      }
-  }
-}
-
-
-bool Player::getText(char dst[MAX_TAG_LENGTH]) {
-  bool ret = updated;
-
-  if (audio && state == Playing && tag < AudioFile::NUM_TAGS) {
-    if (updated) {
-      updated = false;
-
-      // copy display text
-      uint8_t i = 0, j = 0;
-      const String src = audio.getTag(tag);
-      for (; i < (MAX_TAG_LENGTH / 2); i++, j++) {
-        dst[i] = src[j];
-      }
-      if (src[j] == ' ') j++;
-      for (; i < MAX_TAG_LENGTH - 1; i++, j++) {
-        dst[i] = src[j];
-      }
-      dst[i] = tag + 1;
-    }
-  } else {
-    updated = true;
-    dst[0] = 0;
-  }
-
-  return ret;
 }
 
 

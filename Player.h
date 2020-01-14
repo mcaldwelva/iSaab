@@ -23,11 +23,9 @@ class Player : private VS1053
     void pause();
     void resume();
     void shuffle();
-    void rewind();
-    void forward();
     void normal();
-    void nextTrack();
-    void prevTrack();
+    void skipTime(int8_t seconds);
+    void skipTrack(int8_t sign);
     void nextDisc();
     void preset(uint8_t memory);
 
@@ -76,10 +74,7 @@ class Player : private VS1053
       return ret;
     };
 
-    // display
-    void nextText();
-    void text(uint8_t id);
-    bool getText(char dst[MAX_TAG_LENGTH]);
+    const String &getText(uint8_t id) { return audio.getTag(id); }
 
   private:
     void begin();
@@ -91,11 +86,6 @@ class Player : private VS1053
     volatile uint16_t next;
     volatile bool shuffled;
     uint16_t presets[NUM_PRESETS];
-    uint8_t repeatCount;
-
-    // display stuff
-    uint8_t tag;
-    volatile bool updated;
 
     // filesystem stuff
     struct {

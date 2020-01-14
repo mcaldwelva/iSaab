@@ -13,6 +13,8 @@
 #include "iSaab.h"
 
 Player cdc;
+uint8_t tag = AudioFile::NUM_TAGS;
+
 
 // one-time setup
 void setup() {
@@ -22,17 +24,32 @@ void setup() {
   // open I-Bus @ 47.619Kbps
   CAN.begin(47, high_filters, low_filters);
 
+#ifndef SERIALMODE
   // use IRQ for incoming messages
   SPI.usingInterrupt(MCP2515_INT);
   attachInterrupt(MCP2515_INT, processMessage, LOW);
+#else
+  Serial.begin(115200);
+  SPI.usingInterrupt(255);
+
+  // timer 1
+  TCCR1A = 0;
+  TCCR1B = _BV(WGM12) | _BV(CS12);
+  OCR1A  = 0x7a12;
+  TIMSK1 |= _BV(OCIE1A);
+#endif
 
   // save power
   power_adc_disable();
   power_twi_disable();
+  power_timer2_disable();
+#ifndef SERIALMODE
   power_usart0_disable();
   power_timer1_disable();
-  power_timer2_disable();
   set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+#else
+  set_sleep_mode(SLEEP_MODE_IDLE);
+#endif
 }
 
 
@@ -46,14 +63,14 @@ void loop() {
 // interrupt handler for incoming message
 void processMessage() {
   static uint8_t gap = 0;
-  CANClass::msg msg;
 
   if (gap == 0) {
     CAN.setMode(CANClass::Normal);
   }
 
   // if there's a message available
-  if (CAN.receive(msg)) {
+  CANClass::msg msg;
+  if (receiveMessage(msg)) {
     // act on it
     switch (msg.id) {
       case RX_CDC_CONTROL:
@@ -79,7 +96,6 @@ void processMessage() {
 }
 
 
-inline __attribute__((always_inline))
 void powerRequest(CANClass::msg &msg) {
   uint8_t action = msg.data[3] & 0x0f;
 
@@ -107,7 +123,7 @@ void powerRequest(CANClass::msg &msg) {
   msg.data[5] = 0x02;
   msg.data[6] = 0x00;
   msg.data[7] = 0x00;
-  while (!CAN.send(msg));
+  sendMessage(msg);
 
   // send rest of sequence
   switch (action) {
@@ -125,52 +141,63 @@ void powerRequest(CANClass::msg &msg) {
   msg.data[5] = 0x00;
   while (msg.data[0] < 0x62) {
     msg.data[0] += 0x10;
-    while (!CAN.send(msg));
+    sendMessage(msg);
   }
 }
 
 
-inline __attribute__((always_inline))
 void controlRequest(CANClass::msg &msg) {
+  static int8_t repeatCount;
+
   // reply id
   msg.id = TX_CDC_CONTROL;
 
-  // changed, ready, reply
-  msg.data[0] = 0xE0;
+  // ready, reply
+  msg.data[0] = 0x60;
 
   // map CDC commands to methods
+  repeatCount++;
   switch (msg.data[1]) {
     case 0x00: // no command
+      msg.data[0] = 0x20;
+      repeatCount = 0;
       cdc.normal();
       break;
     case 0x35: // TRACK >>
-      cdc.nextTrack();
+      cdc.skipTrack(repeatCount);
       break;
     case 0x36: // TRACK <<
-      cdc.prevTrack();
+      cdc.skipTrack(1 - repeatCount);
       break;
     case 0x45: // PLAY >>
-      cdc.forward();
+      cdc.skipTime(repeatCount);
       break;
     case 0x46: // PLAY <<
-      cdc.rewind();
+      cdc.skipTime(-repeatCount);
       break;
     case 0x59: // NXT
-      if (cdc.isShuffled()) {
-        cdc.nextText();
-      } else {
-        cdc.nextDisc();
+      if (repeatCount == 1) {
+        if (cdc.isShuffled()) {
+          tag = (tag + 1) % (AudioFile::NUM_TAGS + 1);
+        } else {
+          cdc.nextDisc();
+        }
       }
       break;
     case 0x68: // 1 - 6
-      if (cdc.isShuffled()) {
-        cdc.text(msg.data[2] - 1);
-      } else {
-        cdc.preset(msg.data[2] - 1);
+      if (repeatCount == 1) {
+        if (cdc.isShuffled()) {
+          tag = (msg.data[2] - 1 == tag) ? AudioFile::NUM_TAGS : msg.data[2] - 1;
+        } else {
+          cdc.preset(msg.data[2] - 1);
+        }
       }
       break;
     case 0x76: // RDM toggle
-      cdc.shuffle();
+      if (repeatCount == 1) {
+        msg.data[0] |= 0x80;
+        cdc.shuffle();
+      }
       break;
     case 0xb0: // MUTE on
     case 0x14: // deselect CDC
@@ -181,9 +208,6 @@ void controlRequest(CANClass::msg &msg) {
     case 0x24: // select CDC
     case 0x88: // SCAN magazine
       cdc.resume();
-      break;
-    default: // no command
-      msg.data[0] = 0x20;
       break;
   }
 
@@ -219,64 +243,22 @@ void controlRequest(CANClass::msg &msg) {
   msg.data[7] = 0xd0;
   if (cdc.isShuffled()) msg.data[7] |= 0x20;
 
-  // flag disc, track, or time change due to normal playback
+  // flag disc, track, or time change
   static uint8_t last[4] = {0x02, 0x01, 0x00, 0x00};
   if (memcmp(last, (msg.data + 3), sizeof(last))) {
     msg.data[0] |= 0x80;
     memcpy(last, (msg.data + 3), sizeof(last));
   }
 
-  while (!CAN.send(msg));
+  sendMessage(msg);
 }
 
 
-inline __attribute__((always_inline))
 void displayRequest(CANClass::msg &msg) {
   // check row
   if (msg.data[0] == 0x00) {
-    static char text[MAX_TAG_LENGTH];
-    bool reset;
-
-#if (DEBUGMODE>=1)
-    uint8_t tec = CAN.getSendErrors();
-    uint8_t rec = CAN.getReceiveErrors();
-    uint8_t eflg = CAN.getErrorFlags();
-
-    if (tec || rec || eflg) {
-      uint16_t mem = FreeRam();
-
-      text[0]  = 'T';
-      text[3]  = (tec % 10) + '0'; tec /= 10;
-      text[2]  = (tec % 10) + '0'; tec /= 10;
-      text[1]  = (tec % 10) + '0';
-      text[4]  = 'R';
-      text[7] = (rec % 10) + '0'; rec /= 10;
-      text[6] = (rec % 10) + '0'; rec /= 10;
-      text[5]  = (rec % 10) + '0';
-      text[8]  = 'M';
-      text[11] = (mem % 10) + '0'; mem /= 10;
-      text[10] = (mem % 10) + '0'; mem /= 10;
-      text[9]  = (mem % 10) + '0';
-      text[12] = 'O';
-      text[13] = eflg & _BV(7) ? '1' : ' ';
-      text[14] = eflg & _BV(6) ? '0' : ' ';
-      text[15] = 'E';
-      text[16] = eflg & _BV(5) ? 'b' : ' ';
-      text[17] = eflg & _BV(4) ? 't' : ' ';
-      text[18] = eflg & _BV(3) ? 'r' : ' ';
-      text[19] = 'W';
-      text[20] = eflg & _BV(2) ? 't' : ' ';
-      text[21] = eflg & _BV(1) ? 'r' : ' ';
-      text[22] = eflg & _BV(0) ? 'e' : ' ';
-      text[23] = AudioFile::NUM_TAGS + 1;
-
-      cdc.text(AudioFile::NUM_TAGS * 2);
-      reset = true;
-    } else
-#endif
-    { reset = cdc.getText(text); }
-
-    if (text[0] != 0) {
+    const String text = cdc.getText(tag);
+    if ((cdc.getState() == VS1053::Playing) && text.length() > 0) {
       // check owner
       switch (msg.data[1]) {
         case 0x12: // iSaab
@@ -291,21 +273,32 @@ void displayRequest(CANClass::msg &msg) {
 
             // row id, new text flag
             msg.data[2] = (id < 3) ? 2 : 1;
-            if (reset) msg.data[2] |= 0x80;
+            msg.data[2] |= 0x80;
 
             // copy text
             msg.data[3] = text[i++];
-            msg.data[4] = text[i++];
-            if (id % 3) {
-              msg.data[5] = text[i++];
-              msg.data[6] = text[i++];
-              msg.data[7] = text[i++];
-            } else {
-              msg.data[5] = 0x00;
-              msg.data[6] = 0x00;
-              msg.data[7] = 0x00;
+            switch (id) {
+              default:
+                msg.data[4] = text[i++];
+                msg.data[5] = text[i++];
+                msg.data[6] = text[i++];
+                msg.data[7] = text[i++];
+                break;
+              case 3:
+                msg.data[4] = text[i++];
+                if (text[i] == ' ') i++;
+                msg.data[5] = 0x00;
+                msg.data[6] = 0x00;
+                msg.data[7] = 0x00;
+                break;
+              case 0:
+                msg.data[4] = tag + 1;
+                msg.data[5] = 0x00;
+                msg.data[6] = 0x00;
+                msg.data[7] = 0x00;
+                break;
             }
-            while (!CAN.send(msg));
+            sendMessage(msg);
           }
 
           msg.data[2] = 0x05; // keep
@@ -330,6 +323,89 @@ void displayRequest(CANClass::msg &msg) {
     msg.data[5] = 0x00;
     msg.data[6] = 0x00;
     msg.data[7] = 0x00;
-    while (!CAN.send(msg));
+    sendMessage(msg);
   }
 }
+
+
+void sendMessage(const CANClass::msg &msg) {
+#ifndef SERIALMODE
+  while (!CAN.send(msg));
+#else
+  Serial.print(msg.id, HEX);
+  Serial.print(' ');
+
+  for (uint8_t i = 0; i < 8; i++) {
+    Serial.print(msg.data[i], HEX);
+    Serial.print(' ');
+  }
+
+  Serial.println();
+#endif
+}
+
+
+bool receiveMessage(CANClass::msg &msg) {
+#ifndef SERIALMODE
+  return CAN.receive(msg);
+#else
+  msg.id = RX_CDC_CONTROL;
+
+  if (Serial.available()) {
+    char c = Serial.read();
+
+    switch (c) {
+      case 'b':
+        msg.id = RX_CDC_POWER;
+        msg.data[3] = 0x03;
+        break;
+      case 'e':
+        msg.id = RX_CDC_POWER;
+        msg.data[3] = 0x08;
+        break;
+      case 't':
+        msg.id = RX_SID_REQUEST;
+        msg.data[0] = 0x00;
+        msg.data[1] = 0x12;
+        break;
+      case 'p':
+        msg.data[1] = 0xb0;
+        break;
+      case 'r':
+        msg.data[1] = 0xb1;
+        break;
+      case '*':
+        msg.data[1] = 0x76;
+        break;
+      case '>':
+        msg.data[1] = 0x35;
+        break;
+      case '<':
+        msg.data[1] = 0x36;
+        break;
+      case 'n':
+        msg.data[1] = 0x59;
+        break;
+      case '-':
+        msg.data[1] = 0x46;
+        break;
+      case '+':
+        msg.data[1] = 0x45;
+        break;
+      case '1': case '2': case '3': case '4': case '5': case '6':
+        msg.data[1] = 0x68;
+        msg.data[2] = c - '0';
+        break;
+    }
+  } else {
+        msg.data[1] = 0x00;
+  }
+
+  return true;
+#endif
+}
+
+
+#ifdef SERIALMODE
+ISR(TIMER1_COMPA_vect) { processMessage(); }
+#endif

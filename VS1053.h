@@ -67,6 +67,8 @@
 
 class VS1053 {
   public:
+    enum State : uint8_t { Off = 0x00, Busy = 0x30, Paused = 0x40, Playing = 0x41, Rapid = 0x60 };
+
     void setup();
     void begin();
     void end();
@@ -82,7 +84,6 @@ class VS1053 {
     void setVolume(uint8_t left, uint8_t right);
     bool loadPlugin(const __FlashStringHelper* fileName);
 
-    enum State : uint8_t { Off = 0x00, Busy = 0x30, Paused = 0x40, Playing = 0x41, Rapid = 0x60 };
     volatile State state;
     AudioFile audio;
 

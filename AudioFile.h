@@ -18,6 +18,8 @@ class AudioFile : public File
 
     AudioFile();
     AudioFile& operator=(const File &file);
+    void close();
+
     int readMetadata(uint8_t *&buf);
     int readBlock(uint8_t *&buf);
     bool jump(int16_t secs, uint16_t rate);

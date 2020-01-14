@@ -19,7 +19,11 @@ AudioFile::AudioFile() {
 
 AudioFile& AudioFile::operator=(const File &file) {
   File::operator=(file);
+  return *this;
+}
 
+
+void AudioFile::close() {
   // reset properties
   type = OTHER;
 
@@ -27,7 +31,7 @@ AudioFile& AudioFile::operator=(const File &file) {
     tags[i] = "";
   }
 
-  return *this;
+  File::close();
 }
 
 
@@ -218,7 +222,6 @@ void AudioFile::readOgg() {
 }
 
 
-inline __attribute__((noinline))
 void AudioFile::readAsf() {
   char buffer[GUID];
 
