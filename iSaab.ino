@@ -261,7 +261,7 @@ void displayRequest(CANClass::msg &msg) {
   // check row
   if (msg.data[0] == 0x00) {
     const String text = cdc.getText(tag);
-    if ((cdc.getState() == VS1053::Playing) && text.length() > 0) {
+    if ((cdc.getState() == VS1053::Playing) && text.length()) {
       // check owner
       switch (msg.data[1]) {
         case 0x12: // iSaab
