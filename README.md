@@ -7,45 +7,42 @@ This is a virtual replacement for the factory CD changer on first generation Saa
 
 ## Parts
 
-This is built on the [BlueSaab 3.5mm module](http://bluesaab.blogspot.com/2014/03/how-to-build-your-own-35mm-version-of.html) with some small modifications to incorporate a sound card and reduce power consumption. The following or similar parts are required:
+This is based on the [BlueSaab 3.5mm module](http://bluesaab.blogspot.com/2014/03/how-to-build-your-own-35mm-version-of.html) with some modifications to incorporate a sound card and reduce power consumption. The following or similar parts are required:
 
-* [BlueSaab 3.5mm board](https://oshpark.com/shared_projects/uMyNRBbZ)
+* [iSaab board]
 
 * [ICs, caps, resistors, etc.](https://www.mouser.com/ProjectManager/ProjectDetail.aspx?AccessID=5A5DA965B5)
 
 * [TE 827229-1 connector](https://www.connectorpeople.com/Connector/TYCO-AMP-TE_CONNECTIVITY/8/827229-1)
 
-* [Geeetech VS1053 breakout board](https://www.amazon.com/Geeetech-VS1053-breakout-board-card/dp/B0755PQCPS)
+* [VS1053 breakout board](https://www.amazon.com/VS1053B-Arduino-Breakout-Real-time-Recording/dp/B07KNV2YTM)
 
 * FTDI cable
 
 
 ## Build
 
-Most of the components are labeled to match the board. The following require special attention:
-1. Connect a jumper between R6 and LED1-
-2. Connect "DRV134" pin 1 to the 3.5mm Common (base), pin 7 to Left (tip) or Right (middle), and cap between pins 8 and 3
-3. Cut the ribbon cable and strip the even wires (only the bottom row is used) so that they can be solderd in place with the MCU from the underside of the board.
+The BOM components are labeled to match the board. Cut the ribbon cable and strip the even wires (only the bottom row is used) so that they can be solderd in place with the MCU from the underside of the board.
 
 | VS1053 Pin | AVR Pin | Ribbon Pin |
 | ----------:|:------- | ---------- |
-| 5V         | 20      | 2 |
-| GND        | 22      | 4 |
-| CARDCS     | 6 (D4)  | 6 |
-| MISO       | 18      | 8 |
-| MOSI       | 17      | 10 |
-| SCK        | 19      | 12 |
-| XCS        | 13 (D7) | 14 |
-| XRESET     | 15 (D9) | 16 |
-| XDCS       | 12 (D6) | 18 |
-| DREQ       | 5  (D3) | 20 |
+| 5V         | 20      | 1 |
+| GND        | 22      | 2 |
+| CARDCS     | 6 (D4)  | 3 |
+| MISO       | 18      | 4 |
+| MOSI       | 17      | 5 |
+| SCK        | 19      | 6 |
+| XCS        | 13 (D7) | 7 |
+| XRESET     | 15 (D9) | 8 |
+| XDCS       | 12 (D6) | 9 |
+| DREQ       | 5  (D3) | 10 |
 
 ![inside](https://raw.githubusercontent.com/mcaldwelva/iSaab/master/data/inside.jpg)
 
 
 ## Software
 
-* Use Arduino 1.8.8
+* Use Arduino 1.8.10
 
 * Apply the provided SD library patch. This includes fixes to support extended ASCII characters and exclude hidden/system files from directory listings:
 

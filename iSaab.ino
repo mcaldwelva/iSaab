@@ -22,17 +22,18 @@ void setup() {
   cdc.setup();
 
   // open I-Bus @ 47.619Kbps
-  CAN.begin(47, high_filters, low_filters);
-
 #ifndef SERIALMODE
+  CAN.begin(47, high_filters, low_filters);
+#else
+  Serial.begin(115200);
+#endif
+
   // use IRQ for incoming messages
+#ifndef SERIALMODE
   SPI.usingInterrupt(MCP2515_INT);
   attachInterrupt(MCP2515_INT, processMessage, LOW);
 #else
-  Serial.begin(115200);
   SPI.usingInterrupt(255);
-
-  // timer 1
   TCCR1A = 0;
   TCCR1B = _BV(WGM12) | _BV(CS12);
   OCR1A  = 0x7a12;
@@ -308,6 +309,7 @@ void displayRequest(CANClass::msg &msg) {
           msg.data[2] = 0x05; // keep
           break;
         case 0xff: // available
+          reset = true;
           msg.data[2] = 0x03; // request
           break;
         default: // taken
@@ -316,7 +318,6 @@ void displayRequest(CANClass::msg &msg) {
       }
     } else {
       msg.data[2] = 0xff; // decline
-      reset = true;
     }
 
     // display request
