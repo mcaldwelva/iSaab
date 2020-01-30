@@ -1,5 +1,5 @@
-#ifndef PLAYER_H
-#define PLAYER_H
+#ifndef CDC_H
+#define CDC_H
 
 #include <SD.h>
 #include "VS1053.h"
@@ -11,7 +11,7 @@
 #define UNKNOWN       -1
 #define MAX_DEPTH     3
 
-class Player : private VS1053
+class CDCClass : private VS1053
 {
   public:
     void setup();
@@ -101,4 +101,6 @@ class Player : private VS1053
     uint16_t xorshift(uint16_t min, uint16_t max);
 };
 
-#endif // Player.h
+extern CDCClass CDC;
+
+#endif // CDC.h

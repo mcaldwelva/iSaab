@@ -1,5 +1,5 @@
 /*
- *  Player extends VS1053 audio file playback to an entire file system
+ *  CDC extends VS1053 audio file playback to an entire file system via CD changer style interface
  *   - Folders are searched in depth-first order
  *   - Files are played in file system order
  *
@@ -7,11 +7,12 @@
 
 #include <SD.h>
 #include <util/atomic.h>
-#include "Player.h"
+#include "CDC.h"
 
+CDCClass CDC;
 
 // perform one-time setup on power-up
-void Player::setup() {
+void CDCClass::setup() {
   // deselect SD card
   pinMode(SD_CS, OUTPUT);
   digitalWrite(SD_CS, HIGH);
@@ -29,8 +30,8 @@ void Player::setup() {
 }
 
 
-// start-up player
-void Player::begin() {
+// start-up CDC
+void CDCClass::begin() {
   // turn on sound card
   VS1053::begin();
 
@@ -53,8 +54,8 @@ void Player::begin() {
 }
 
 
-// shut-down player
-void Player::end() {
+// shut-down CDC
+void CDCClass::end() {
   // resume current track on start-up
   next = current;
 
@@ -73,7 +74,7 @@ void Player::end() {
 
 
 // main playback loop
-void Player::play() {
+void CDCClass::play() {
   if (state >= Busy) {
     begin();
 
@@ -92,14 +93,14 @@ void Player::play() {
 }
 
 
-void Player::on() {
+void CDCClass::on() {
   if (state == Off) {
     state = Busy;
   }
 }
 
 
-void Player::off() {
+void CDCClass::off() {
   if (state >= Paused) {
     state = Busy;
     stopTrack();
@@ -107,22 +108,22 @@ void Player::off() {
 }
 
 
-void Player::pause() {
+void CDCClass::pause() {
   state = Paused;
 }
 
 
-void Player::resume() {
+void CDCClass::resume() {
   state = Playing;
 }
 
 
-void Player::shuffle() {
+void CDCClass::shuffle() {
   shuffled = !shuffled;
 }
 
 
-void Player::skipTrack(int8_t sign) {
+void CDCClass::skipTrack(int8_t sign) {
   if (shuffled) {
     if (sign > 0) {
       if (next == UNKNOWN) {
@@ -152,7 +153,7 @@ void Player::skipTrack(int8_t sign) {
 }
 
 
-void Player::nextDisc() {
+void CDCClass::nextDisc() {
   if (next == UNKNOWN) {
     next = path[depth].last;
     stopTrack();
@@ -161,7 +162,7 @@ void Player::nextDisc() {
 
 
 // read presets from file
-void Player::readPresets(const __FlashStringHelper* fileName) {
+void CDCClass::readPresets(const __FlashStringHelper* fileName) {
   // clear existing presets
   memset(presets, 0, sizeof(presets));
 
@@ -185,7 +186,7 @@ void Player::readPresets(const __FlashStringHelper* fileName) {
 }
 
 
-void Player::preset(uint8_t memory) {
+void CDCClass::preset(uint8_t memory) {
   if (next == UNKNOWN) {
     next = presets[memory];
     stopTrack();
@@ -193,7 +194,7 @@ void Player::preset(uint8_t memory) {
 }
 
 
-void Player::skipTime(int8_t seconds) {
+void CDCClass::skipTime(int8_t seconds) {
   if (state != Rapid) {
     state = Rapid;
   }
@@ -202,7 +203,7 @@ void Player::skipTime(int8_t seconds) {
 }
 
 
-void Player::normal() {
+void CDCClass::normal() {
   if (state == Rapid) {
     state = Playing;
   }
@@ -210,7 +211,7 @@ void Player::normal() {
 
 
 // find the new track number on the file system
-void Player::openTrack() {
+void CDCClass::openTrack() {
   static bool hasFolders;
 
   // go back to the closest starting point
@@ -311,7 +312,7 @@ void Player::openTrack() {
 }
 
 
-uint16_t Player::xorshift(uint16_t min, uint16_t max) {
+uint16_t CDCClass::xorshift(uint16_t min, uint16_t max) {
   seed ^= seed << 7;
   seed ^= seed >> 9;
   seed ^= seed << 8;

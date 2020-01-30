@@ -9,17 +9,16 @@
 #include <avr/sleep.h>
 #include <util/atomic.h>
 #include "CAN.h"
-#include "Player.h"
+#include "CDC.h"
 #include "iSaab.h"
 
-Player cdc;
 uint8_t tag = AudioFile::NUM_TAGS;
 bool reset;
 
 // one-time setup
 void setup() {
   // setup sound card
-  cdc.setup();
+  CDC.setup();
 
   // open I-Bus @ 47.619Kbps
 #ifndef SERIALMODE
@@ -40,24 +39,24 @@ void setup() {
   TIMSK1 |= _BV(OCIE1A);
 #endif
 
-  // save power
-  power_adc_disable();
-  power_twi_disable();
-  power_timer2_disable();
+  // reduce power
 #ifndef SERIALMODE
+  set_sleep_mode(SLEEP_MODE_PWR_DOWN);
   power_usart0_disable();
   power_timer1_disable();
-  set_sleep_mode(SLEEP_MODE_PWR_DOWN);
 #else
   set_sleep_mode(SLEEP_MODE_IDLE);
 #endif
+  power_adc_disable();
+  power_twi_disable();
+  power_timer2_disable();
 }
 
 
 // main loop
 void loop() {
   sleep_mode();
-  cdc.play();
+  CDC.play();
 }
 
 
@@ -110,11 +109,11 @@ void powerRequest(CANClass::msg &msg) {
       break;
     case 0x3: // power on
       msg.data[3] = 0x03;
-      cdc.on();
+      CDC.on();
       break;
     case 0x8: // power off
       msg.data[3] = 0x19;
-      cdc.off();
+      CDC.off();
       break;
   }
   msg.data[0] = 0x32;
@@ -162,55 +161,56 @@ void controlRequest(CANClass::msg &msg) {
     case 0x00: // no command
       msg.data[0] = 0x20;
       repeatCount = 0;
-      cdc.normal();
+      CDC.normal();
       break;
     case 0x35: // TRACK >>
-      cdc.skipTrack(repeatCount);
+      CDC.skipTrack(repeatCount);
       break;
     case 0x36: // TRACK <<
-      cdc.skipTrack(1 - repeatCount);
+      CDC.skipTrack(1 - repeatCount);
       break;
     case 0x45: // PLAY >>
-      cdc.skipTime(repeatCount);
+      CDC.skipTime(repeatCount);
       break;
     case 0x46: // PLAY <<
-      cdc.skipTime(-repeatCount);
+      CDC.skipTime(-repeatCount);
       break;
     case 0x59: // NXT
       if (repeatCount == 1) {
-        if (cdc.isShuffled()) {
+        if (CDC.isShuffled()) {
           tag = (tag + 1) % (AudioFile::NUM_TAGS + 1);
           reset = true;
         } else {
-          cdc.nextDisc();
+          CDC.nextDisc();
         }
       }
       break;
     case 0x68: // 1 - 6
       if (repeatCount == 1) {
-        if (cdc.isShuffled()) {
-          tag = (msg.data[2] - 1 == tag) ? AudioFile::NUM_TAGS : msg.data[2] - 1;
+        uint8_t select = msg.data[2] - 1;
+        if (CDC.isShuffled()) {
+          tag = (select == tag) ? AudioFile::NUM_TAGS : select;
           reset = true;
         } else {
-          cdc.preset(msg.data[2] - 1);
+          CDC.preset(select);
         }
       }
       break;
     case 0x76: // RDM toggle
       if (repeatCount == 1) {
         msg.data[0] |= 0x80;
-        cdc.shuffle();
+        CDC.shuffle();
       }
       break;
     case 0xb0: // MUTE on
     case 0x14: // deselect CDC
     case 0x84: // SCAN disc
-      cdc.pause();
+      CDC.pause();
       break;
     case 0xb1: // MUTE off
     case 0x24: // select CDC
     case 0x88: // SCAN magazine
-      cdc.resume();
+      CDC.resume();
       break;
   }
 
@@ -220,17 +220,17 @@ void controlRequest(CANClass::msg &msg) {
   msg.data[2] = 0b00111111;
 
   // play status, disc
-  msg.data[3] = cdc.getState() & 0xf0;
-  msg.data[3] |= cdc.getDisc() % 6 + 1;
+  msg.data[3] = CDC.getState() & 0xf0;
+  msg.data[3] |= CDC.getDisc() % 6 + 1;
 
   // track
-  uint8_t track = cdc.getTrack() + 1;
+  uint8_t track = CDC.getTrack() + 1;
   msg.data[4] = (track / 10) % 10;
   msg.data[4] <<= 4;
   msg.data[4] |= track % 10;
 
   // minutes
-  uint16_t time = cdc.getTime();
+  uint16_t time = CDC.getTime();
   uint8_t min = time / 60;
   msg.data[5] = (min / 10) % 10;
   msg.data[5] <<= 4;
@@ -244,7 +244,7 @@ void controlRequest(CANClass::msg &msg) {
 
   // married, RDM
   msg.data[7] = 0xd0;
-  if (cdc.isShuffled()) msg.data[7] |= 0x20;
+  if (CDC.isShuffled()) msg.data[7] |= 0x20;
 
   // flag disc, track, or time change
   static uint8_t last[4] = {0x02, 0x01, 0x00, 0x00};
@@ -261,8 +261,8 @@ void controlRequest(CANClass::msg &msg) {
 void displayRequest(CANClass::msg &msg) {
   // check row
   if (msg.data[0] == 0x00) {
-    const String text = cdc.getText(tag);
-    if ((cdc.getState() == VS1053::Playing) && text.length()) {
+    const String text = CDC.getText(tag);
+    if ((CDC.getState() == VS1053::Playing) && text.length()) {
       // check owner
       switch (msg.data[1]) {
         case 0x12: // iSaab
