@@ -143,13 +143,13 @@
     (add_net MISO)
     (add_net MOSI)
     (add_net N$13)
-    (add_net RESET)
     (add_net N$15)
     (add_net N$17)
     (add_net N$18)
+    (add_net N$35)
     (add_net OSC1)
     (add_net OSC2)
-    (add_net N$35)
+    (add_net RESET)
     (add_net ROUT)
     (add_net RTS)
     (add_net RX)
@@ -714,7 +714,7 @@
     (at 155.463512 115.2 90)
     (descr "Ceramic Resomator/Filter 10.0x5.0mm^2 RedFrequency MG/MT/MX series, http://www.red-frequency.com/download/datenblatt/redfrequency-datenblatt-ir-zta.pdf, length*width=10.0x5.0mm^2 package, package length=10.0mm, package width=5.0mm, 3 pins")
     (tags "THT ceramic resonator filter")
-    (fp_text reference U$2 (at 2.17 2.016488 90) (layer F.SilkS) hide
+    (fp_text reference Y1 (at 2.17 2.016488 90) (layer F.SilkS)
       (effects (font (size 1.27 1.27) (thickness 0.15)))
     )
     (fp_text value 16MHz (at 2.17 -1.793512 90) (layer F.SilkS) hide
@@ -753,7 +753,7 @@
     (at 128.113312 122.5 270)
     (descr "Ceramic Resomator/Filter 10.0x5.0mm^2 RedFrequency MG/MT/MX series, http://www.red-frequency.com/download/datenblatt/redfrequency-datenblatt-ir-zta.pdf, length*width=10.0x5.0mm^2 package, package length=10.0mm, package width=5.0mm, 3 pins")
     (tags "THT ceramic resonator filter")
-    (fp_text reference U$1 (at 0 -1.426688 270) (layer F.SilkS) hide
+    (fp_text reference Y2 (at 1.452 -1.426688 270) (layer F.SilkS)
       (effects (font (size 1.27 1.27) (thickness 0.15)) (justify right top))
     )
     (fp_text value 16MHz (at -0.58 2.129312 270) (layer F.SilkS) hide
