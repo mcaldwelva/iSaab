@@ -42,7 +42,7 @@ The BOM components are labeled to match the board. Cut the ribbon cable and stri
 
 ## Software
 
-* Use Arduino 1.8.10
+* Use Arduino 1.8.12
 
 * Apply the provided SD library patch. This includes fixes to support extended ASCII characters and exclude hidden/system files from directory listings:
 

@@ -222,6 +222,7 @@ void AudioFile::readOgg() {
 }
 
 
+__attribute__((noinline))
 void AudioFile::readAsf() {
   char buffer[GUID];
 

@@ -70,10 +70,12 @@ void VS1053::stopTrack() {
 }
 
 
-// begin playback of new file
-bool VS1053::startTrack() {
+// play to end of file
+void VS1053::playTrack() {
+  uint8_t *buffer;
+
   if (!audio) {
-    return false;
+    return;
   }
 
   // wait up to 15ms for HDAT to clear
@@ -89,7 +91,6 @@ bool VS1053::startTrack() {
   // process metadata
   uint16_t bytesRead;
   do {
-    uint8_t *buffer;
     bytesRead = audio.readMetadata(buffer);
     sendData(buffer, bytesRead);
   } while (bytesRead > 0);
@@ -97,22 +98,14 @@ bool VS1053::startTrack() {
   // turn analog up
   setVolume(0x00, 0x00);
 
-  return true;
-}
-
-
-// play to end of file
-void VS1053::playTrack() {
-  uint8_t *buffer;
-
   // send data until the track is closed
   while (audio) {
     if (state >= Playing) {
       uint16_t bytesRead = audio.readBlock(buffer);
+
       if (bytesRead) {
         sendData(buffer, bytesRead);
       } else {
-        // close the file if there's no more data
         audio.close();
       }
     }

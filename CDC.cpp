@@ -84,7 +84,6 @@ void CDCClass::play() {
         skipTrack(1);
       }
       openTrack();
-      startTrack();
       playTrack();
     }
 

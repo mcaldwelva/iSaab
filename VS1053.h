@@ -73,7 +73,6 @@ class VS1053 {
     void begin();
     void end();
 
-    bool startTrack();
     void playTrack();
     void stopTrack();
 

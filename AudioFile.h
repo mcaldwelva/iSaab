@@ -27,8 +27,8 @@ class AudioFile : public File
     const String &getTag(uint8_t tag) {
       return tags[ tag < NUM_TAGS ? tag : NUM_TAGS ];
     }
-    uint8_t *fillBuffer(uint8_t value, uint8_t num) {
-      return (uint8_t *) memset(buffer, value, num);
+    uint8_t *fillBuffer(uint8_t c, size_t n) {
+      return (uint8_t *) memset(buffer, c, n);
     }
 
   private:

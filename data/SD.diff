@@ -1,6 +1,6 @@
 diff -ru ./SD/src/utility/FatStructs.h ~/SD/src/utility/FatStructs.h
---- ./SD/src/utility/FatStructs.h	2018-11-22 08:48:46.000000000 -0500
-+++ ~/SD/src/utility/FatStructs.h	2018-12-23 15:15:24.712996600 -0500
+--- ./SD/src/utility/FatStructs.h	2019-10-11 11:15:02.000000000 -0400
++++ ~/SD/src/utility/FatStructs.h	2020-02-20 15:33:32.558636800 -0500
 @@ -413,6 +413,6 @@
  }
  /** Directory entry is for a file or subdirectory */
@@ -10,26 +10,26 @@ diff -ru ./SD/src/utility/FatStructs.h ~/SD/src/utility/FatStructs.h
  }
  #endif  // FatStructs_h
 diff -ru ./SD/src/utility/SdFile.cpp ~/SD/src/utility/SdFile.cpp
---- ./SD/src/utility/SdFile.cpp	2018-11-22 08:48:46.000000000 -0500
-+++ ~/SD/src/utility/SdFile.cpp	2018-12-23 15:15:59.920942800 -0500
-@@ -268,7 +268,7 @@
-       while ((b = *p++)) if (b == c) return false;
- #endif
+--- ./SD/src/utility/SdFile.cpp	2019-10-11 11:15:02.000000000 -0400
++++ ~/SD/src/utility/SdFile.cpp	2020-02-20 15:34:56.639194700 -0500
+@@ -315,7 +315,7 @@
+         }
+       #endif
        // check size and only allow ASCII printable characters
--      if (i > n || c < 0X21 || c > 0X7E)return false;
-+      if (i > n || c < 0x20 || c == 0x7F) return false;
+-      if (i > n || c < 0X21 || c > 0X7E) {
++      if (i > n || c < 0x20 || c == 0x7F) {
+         return false;
+       }
        // only upper case allowed in 8.3 names - convert lower to upper
-       name[i++] = c < 'a' || c > 'z' ?  c : c + ('A' - 'a');
-     }
 diff -ru ./SD/src/utility/SdFat.h ~/SD/src/utility/SdFat.h
---- ./SD/src/utility/SdFat.h    2018-11-22 08:48:46.000000000 -0500
-+++ ~/SD/src/utility/SdFat.h    2019-03-06 13:46:44.003390600 -0500
-@@ -386,7 +386,7 @@
-
-   // private data
-   uint8_t   flags_;         // See above for definition of flags_ bits
--  uint8_t   type_;          // type of file see above for values
-+  volatile uint8_t type_;   // type of file see above for values
-   uint32_t  curCluster_;    // cluster for current file position
-   uint32_t  curPosition_;   // current file position in bytes from beginning
-   uint32_t  dirBlock_;      // SD block that contains directory entry for file
+--- ./SD/src/utility/SdFat.h	2019-10-11 11:15:02.000000000 -0400
++++ ~/SD/src/utility/SdFat.h	2020-02-20 15:35:31.724036500 -0500
+@@ -437,7 +437,7 @@
+ 
+     // private data
+     uint8_t   flags_;         // See above for definition of flags_ bits
+-    uint8_t   type_;          // type of file see above for values
++    volatile uint8_t type_;   // type of file see above for values
+     uint32_t  curCluster_;    // cluster for current file position
+     uint32_t  curPosition_;   // current file position in bytes from beginning
+     uint32_t  dirBlock_;      // SD block that contains directory entry for file
