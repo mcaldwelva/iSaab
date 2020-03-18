@@ -9,7 +9,7 @@ This is a virtual replacement for the factory CD changer on first generation Saa
 
 This is based on the [BlueSaab 3.5mm module](http://bluesaab.blogspot.com/2014/03/how-to-build-your-own-35mm-version-of.html) with some modifications to incorporate a sound card and reduce power consumption. The following or similar parts are required:
 
-* iSaab board
+* [iSaab board](https://oshpark.com/shared_projects/YxlNUQUI)
 
 * [ICs, caps, resistors, etc.](https://www.mouser.com/ProjectManager/ProjectDetail.aspx?AccessID=5A5DA965B5)
 
