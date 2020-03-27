@@ -404,7 +404,7 @@ bool receiveMessage(CANClass::msg &msg) {
         break;
     }
   } else {
-        msg.data[1] = 0x00;
+    msg.data[1] = 0x00;
   }
 
   return true;
