@@ -4,10 +4,8 @@
  */
 
 #include <SPI.h>
-#include <SD.h>
 #include <avr/power.h>
 #include <avr/sleep.h>
-#include <util/atomic.h>
 #include "CAN.h"
 #include "CDC.h"
 #include "iSaab.h"

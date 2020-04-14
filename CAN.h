@@ -1,6 +1,8 @@
 #ifndef CAN_H
 #define CAN_H
 
+#include <SD.h>
+
 #define MCP2515_CS     10
 #define MCP2515_IRQ    2
 #define MCP2515_INT    digitalPinToInterrupt(MCP2515_IRQ)
