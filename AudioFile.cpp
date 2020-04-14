@@ -467,9 +467,12 @@ int AudioFile::readBlock(uint8_t *&buf) {
   read();
   buf = buffer + rem;
 
+  // move to the next block or EOF
   if (!seek(pos + siz)) {
     siz = size() - pos;
-    seek(pos + siz);
+    if (!seek(pos + siz)) {
+      siz = 0;
+    }
   }
 
   return siz;

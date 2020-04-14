@@ -89,7 +89,7 @@ void VS1053::playTrack() {
   sciWrite(SCI_DECODETIME, 0x00);
 
   // process metadata
-  uint16_t bytesRead;
+  int bytesRead;
   do {
     bytesRead = audio.readMetadata(buffer);
     sendData(buffer, bytesRead);
@@ -101,9 +101,9 @@ void VS1053::playTrack() {
   // send data until the track is closed
   while (audio) {
     if (state >= Playing) {
-      uint16_t bytesRead = audio.readBlock(buffer);
+      bytesRead = audio.readBlock(buffer);
 
-      if (bytesRead) {
+      if (bytesRead > 0) {
         sendData(buffer, bytesRead);
       } else {
         audio.close();
