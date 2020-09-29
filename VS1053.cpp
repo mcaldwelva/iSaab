@@ -13,7 +13,7 @@
 
 // setup pins
 void VS1053::setup() {
-  // turn off coproc
+  // turn off codec
   pinMode(VS1053_XRESET, OUTPUT);
   digitalWrite(VS1053_XRESET, LOW);
   state = Off;
@@ -35,7 +35,7 @@ void VS1053::setup() {
 
 // power on
 void VS1053::begin() {
-  // turn on coproc
+  // turn on codec
   digitalWrite(VS1053_XRESET, HIGH);
   while (!readyForData());
 
@@ -55,7 +55,7 @@ void VS1053::begin() {
 
 // power off
 void VS1053::end() {
-  // turn off coproc
+  // turn off codec
   digitalWrite(VS1053_XRESET, LOW);
 }
 
@@ -73,6 +73,7 @@ void VS1053::stopTrack() {
 // play to end of file
 void VS1053::playTrack() {
   uint8_t *buffer;
+  int bytesRead;
 
   if (!audio) {
     return;
@@ -89,7 +90,6 @@ void VS1053::playTrack() {
   sciWrite(SCI_DECODETIME, 0x00);
 
   // process metadata
-  int bytesRead;
   do {
     bytesRead = audio.readMetadata(buffer);
     sendData(buffer, bytesRead);
@@ -135,7 +135,7 @@ void VS1053::playTrack() {
 
 // skip the specified number of seconds
 void VS1053::skip(int16_t secs) {
-  // check if the coproc can skip now
+  // check if the codec can skip now
   if (sciRead(SCI_STATUS) & SS_DO_NOT_JUMP) {
     return;
   }
@@ -209,7 +209,7 @@ bool VS1053::loadPlugin(const __FlashStringHelper* fileName) {
 }
 
 
-// send data to the coproc
+// send data to the codec
 void VS1053::sendData(uint8_t data[], uint16_t len) {
   while (len > 0) {
     while (!readyForData());
@@ -276,7 +276,7 @@ void VS1053::sciWrite(uint8_t addr, uint16_t data) {
 }
 
 
-// check if coproc can take data
+// check if codec can take data
 inline __attribute__((always_inline))
 bool VS1053::readyForData() {
   return fastDigitalRead(VS1053_XDREQ);

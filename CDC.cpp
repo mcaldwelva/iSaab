@@ -139,8 +139,6 @@ void CDCClass::skipTrack(int8_t sign) {
       next++;
     } else if (sign < 0) {
       next--;
-    } else {
-      next = current;
     }
   }
 
