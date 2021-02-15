@@ -74,7 +74,7 @@ void CDCClass::end() {
 
 
 // main playback loop
-void CDCClass::play() {
+void CDCClass::loop() {
   if (state >= Busy) {
     begin();
 
@@ -142,6 +142,7 @@ void CDCClass::skipTrack(int8_t sign) {
     }
   }
 
+  // if next is UNKNOWN at this point, it has wrapped
   if (next == UNKNOWN) {
     next = 0;
   }

@@ -17,9 +17,9 @@ class CDCClass : private VS1053
     void setup();
     void on();
     void off();
+    void loop();
 
     // operations
-    void play();
     void pause();
     void resume();
     void shuffle();

@@ -1,5 +1,5 @@
 /*
- * iSaab -- A virtual CD Changer for early 9-3's and 9-5's
+ * iSaab -- A CD Changer replacement for Saab 9-3 OG and 9-5 OG
  *
  */
 
@@ -11,50 +11,50 @@
 #include "iSaab.h"
 
 uint8_t tag = AudioFile::NUM_TAGS;
-bool reset;
+bool newText;
 
 // one-time setup
 void setup() {
   // setup sound card
   CDC.setup();
 
-  // open I-Bus @ 47.619Kbps
 #ifndef SERIALMODE
+  // open I-Bus @ 47.619Kbps
   CAN.begin(47, high_filters, low_filters);
-#else
-  Serial.begin(115200);
-#endif
 
   // use IRQ for incoming messages
-#ifndef SERIALMODE
   SPI.usingInterrupt(MCP2515_INT);
   attachInterrupt(MCP2515_INT, processMessage, LOW);
-#else
-  SPI.usingInterrupt(255);
-  TCCR1A = 0;
-  TCCR1B = _BV(WGM12) | _BV(CS12);
-  OCR1A  = 0x7a12;
-  TIMSK1 |= _BV(OCIE1A);
-#endif
 
   // reduce power
-#ifndef SERIALMODE
   set_sleep_mode(SLEEP_MODE_PWR_DOWN);
   power_usart0_disable();
   power_timer1_disable();
 #else
+  // open serial
+  Serial.begin(115200);
+
+  // use timer to read serial
+  SPI.usingInterrupt(255);
+  TCCR1A = 0;
+  TCCR1B = _BV(WGM12) | _BV(CS12);
+  OCR1A  = F_CPU / 256 / 2 - 1;
+  TIMSK1 |= _BV(OCIE1A);
+
+  // reduce power
   set_sleep_mode(SLEEP_MODE_IDLE);
 #endif
+
+  power_timer2_disable();
   power_adc_disable();
   power_twi_disable();
-  power_timer2_disable();
 }
 
 
 // main loop
 void loop() {
   sleep_mode();
-  CDC.play();
+  CDC.loop();
 }
 
 
@@ -62,6 +62,7 @@ void loop() {
 void processMessage() {
   static uint8_t gap = 0;
 
+  // starting to receive CDC messages, wake up
   if (gap == 0) {
     CAN.setMode(CANClass::Normal);
   }
@@ -88,6 +89,7 @@ void processMessage() {
     }
   }
 
+  // no more CDC messages, go to sleep
   if (gap == 0) {
     CAN.setMode(CANClass::ListenOnly);
   }
@@ -177,7 +179,7 @@ void controlRequest(CANClass::msg &msg) {
       if (repeatCount == 1) {
         if (CDC.isShuffled()) {
           tag = (tag + 1) % (AudioFile::NUM_TAGS + 1);
-          reset = true;
+          newText = true;
         } else {
           CDC.nextDisc();
         }
@@ -188,7 +190,7 @@ void controlRequest(CANClass::msg &msg) {
         uint8_t select = msg.data[2] - 1;
         if (CDC.isShuffled()) {
           tag = (select == tag) ? AudioFile::NUM_TAGS : select;
-          reset = true;
+          newText = true;
         } else {
           CDC.preset(select);
         }
@@ -248,7 +250,7 @@ void controlRequest(CANClass::msg &msg) {
   static uint8_t last[4] = {0x02, 0x01, 0x00, 0x00};
   if (memcmp(last, (msg.data + 3), sizeof(last))) {
     msg.data[0] |= 0x80;
-    if (time == 1) reset = true;
+    if (time == 0) newText = true;
     memcpy(last, (msg.data + 3), sizeof(last));
   }
 
@@ -275,18 +277,19 @@ void displayRequest(CANClass::msg &msg) {
 
             // row id, new text flag
             msg.data[2] = (id < 3) ? 2 : 1;
-            if (reset) msg.data[2] |= 0x80;
+            if (newText) msg.data[2] |= 0x80;
 
             // copy text
-            msg.data[3] = text[i++];
             switch (id) {
               default:
+                msg.data[3] = text[i++];
                 msg.data[4] = text[i++];
                 msg.data[5] = text[i++];
                 msg.data[6] = text[i++];
                 msg.data[7] = text[i++];
                 break;
               case 3:
+                msg.data[3] = text[i++];
                 msg.data[4] = text[i++];
                 if (text[i] == ' ') i++;
                 msg.data[5] = 0x00;
@@ -294,6 +297,7 @@ void displayRequest(CANClass::msg &msg) {
                 msg.data[7] = 0x00;
                 break;
               case 0:
+                msg.data[3] = text[i++];
                 msg.data[4] = tag + 1;
                 msg.data[5] = 0x00;
                 msg.data[6] = 0x00;
@@ -303,11 +307,11 @@ void displayRequest(CANClass::msg &msg) {
             sendMessage(msg);
           }
 
-          reset = false;
+          newText = false;
           msg.data[2] = 0x05; // keep
           break;
         case 0xff: // available
-          reset = true;
+          newText = true;
           msg.data[2] = 0x03; // request
           break;
         default: // taken

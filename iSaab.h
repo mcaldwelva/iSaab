@@ -1,6 +1,7 @@
 #ifndef iSaab_H
 #define iSaab_H
 
+
 /**
  * CDC presence
  * http://pikkupossu.1g.fi/tomi/projects/i-bus/i-bus.html#6A1
