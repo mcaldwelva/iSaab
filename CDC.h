@@ -25,7 +25,7 @@ class CDCClass : private VS1053
     void shuffle();
     void normal();
     void skipTime(int8_t seconds);
-    void skipTrack(int8_t sign);
+    void skipTrack(int8_t sign = 1);
     void nextDisc();
     void preset(uint8_t memory);
 

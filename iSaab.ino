@@ -67,10 +67,9 @@ void processMessage() {
     CAN.setMode(CANClass::Normal);
   }
 
-  // if there's a message available
+  // act on message
   CANClass::msg msg;
   if (receiveMessage(msg)) {
-    // act on it
     switch (msg.id) {
       case RX_CDC_CONTROL:
         controlRequest(msg);
@@ -83,7 +82,7 @@ void processMessage() {
         break;
 
       case RX_SID_REQUEST:
-        displayRequest(msg);
+        displayRequest(msg); // comment out for vehicles equipped with Park Assist
         gap--;
         break;
     }
@@ -178,6 +177,7 @@ void controlRequest(CANClass::msg &msg) {
     case 0x59: // NXT
       if (repeatCount == 1) {
         if (CDC.isShuffled()) {
+          // rotate display tag
           tag = (tag + 1) % (AudioFile::NUM_TAGS + 1);
           newText = true;
         } else {
@@ -187,12 +187,13 @@ void controlRequest(CANClass::msg &msg) {
       break;
     case 0x68: // 1 - 6
       if (repeatCount == 1) {
-        uint8_t select = msg.data[2] - 1;
+        uint8_t preset = msg.data[2] - 1;
         if (CDC.isShuffled()) {
-          tag = (select == tag) ? AudioFile::NUM_TAGS : select;
+          // hide/show display tag
+          tag = (preset == tag) ? AudioFile::NUM_TAGS : preset;
           newText = true;
         } else {
-          CDC.preset(select);
+          CDC.preset(preset);
         }
       }
       break;
@@ -261,8 +262,9 @@ void controlRequest(CANClass::msg &msg) {
 void displayRequest(CANClass::msg &msg) {
   // check row
   if (msg.data[0] == 0x00) {
+    // check if display is wanted
     const String text = CDC.getText(tag);
-    if ((CDC.getState() == VS1053::Playing) && text.length()) {
+    if (CDC.getState() == VS1053::Playing && text.length() > 0) {
       // check owner
       switch (msg.data[1]) {
         case 0x12: // iSaab

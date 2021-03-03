@@ -81,7 +81,7 @@ void CDCClass::loop() {
     while (state >= Paused) {
       // get the next track if one hasn't already been selected
       if (next == UNKNOWN) {
-        skipTrack(1);
+        skipTrack();
       }
       openTrack();
       playTrack();
@@ -193,10 +193,7 @@ void CDCClass::preset(uint8_t memory) {
 
 
 void CDCClass::skipTime(int8_t seconds) {
-  if (state != Rapid) {
-    state = Rapid;
-  }
-
+  state = Rapid;
   skip(seconds);
 }
 
@@ -210,7 +207,7 @@ void CDCClass::normal() {
 
 // find the new track number on the file system
 void CDCClass::openTrack() {
-  static bool hasFolders;
+  static bool hasFolders = true;
 
   // go back to the closest starting point
   while (next < path[depth].first) {
@@ -224,6 +221,7 @@ void CDCClass::openTrack() {
   if (next >= path[depth].last) {
     file = path[depth].last;
     if (path[depth].last - path[depth].first > 0) folder++;
+    if (hasFolders) path[depth].h.rewindDirectory();
   } else {
     file = current + 1;
   }
@@ -248,17 +246,28 @@ void CDCClass::openTrack() {
           // flag hasFolders
           hasFolders = true;
         } else {
-          // count file
-          if (file == next && path[depth].last != UNKNOWN) {
-            // this is the file we're looking for
-            ATOMIC_BLOCK(ATOMIC_FORCEON) {
-              current = file;
-              next = UNKNOWN;
-              audio = entry;
-            }
-            return;
-          } else {
-            file++;
+          // only count audio files
+          char *ext = strchr(entry.name(), '.');
+          switch (LE8x4(ext)) {
+            case LE8x4(".AAC"):
+            case LE8x4(".DSF"):
+            case LE8x4(".FLA"):
+            case LE8x4(".M4A"):
+            case LE8x4(".MP3"):
+            case LE8x4(".OGG"):
+            case LE8x4(".WMA"):
+              if (file == next && path[depth].last != UNKNOWN) {
+                // this is the file we're looking for
+                ATOMIC_BLOCK(ATOMIC_FORCEON) {
+                  current = file;
+                  next = UNKNOWN;
+                  audio = entry;
+                }
+                return;
+              } else {
+                // count file
+                file++;
+              }
           }
         }
 
@@ -266,18 +275,18 @@ void CDCClass::openTrack() {
         entry = path[depth].h.openNextFile();
       }
 
-      // update with actual number of files
+      // we now know the last file in this folder
       path[depth].last = file;
 
       // count this folder if it contained files
       if (path[depth].last - path[depth].first > 0) folder++;
 
+      // rewind if there are explorable sub-folders
+      if (hasFolders) path[depth].h.rewindDirectory();
+
     } else {
 
-      if (depth < MAX_DEPTH) {
-        // rewind if there are explorable sub-folders
-        if (file == path[depth].last && hasFolders) path[depth].h.rewindDirectory();
-
+      if (hasFolders && depth < MAX_DEPTH) {
         // find the next folder
         entry = path[depth].h.openNextFile();
         while (entry && !entry.isDirectory()) {
@@ -286,7 +295,7 @@ void CDCClass::openTrack() {
         }
       }
 
-      // if we found one
+      // if we found a folder
       if (entry) {
         depth++;
         path[depth].folder = folder;
@@ -304,6 +313,7 @@ void CDCClass::openTrack() {
           next %= file;
           folder = 0;
         }
+        hasFolders = true;
       }
     }
   }

@@ -57,6 +57,7 @@
 #define CODEC_WMA            0x574d
 #define CODEC_MIDI           0x4d54
 #define CODEC_OGG            0x4f67
+#define CODEC_DSD            0x4453
 #define CODEC_AAC_ADTS       0x4154
 #define CODEC_AAC_ADIF       0x4144
 #define CODEC_AAC_MP4        0x4d34

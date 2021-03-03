@@ -404,31 +404,31 @@ int AudioFile::readMetadata(uint8_t *&buf) {
 
     // look for supported magic numbers
     switch(BE8x4(buffer)) {
-      case 0x664c6143:
-        type = FLAC;
-        seek(4);
-        siz = readFlac();
-        break;
-      case 0x4f676753:
-        readOgg();
+      case 0x0000001c:
+      case 0x00000020:
+        seek(BE8x4(buffer));
+        readQtff();
         break;
       case 0x3026b275:
         readAsf();
         break;
-      case 0x00000020:
-      case 0x0000001c:
-        seek(BE8x4(buffer));
-        readQtff();
-        break;
-      case 0x49443304:
-      case 0x49443303:
-      case 0x49443302:
-        seek(3);
-        readId3Tags();
-        break;
       case 0x44534420:
         type = DSF;
         readDsf();
+        break;
+      case 0x49443302:
+      case 0x49443303:
+      case 0x49443304:
+        seek(3);
+        readId3Tags();
+        break;
+      case 0x4f676753:
+        readOgg();
+        break;
+      case 0x664c6143:
+        seek(4);
+        type = FLAC;
+        siz = readFlac();
         break;
       default:
         seek(0);

@@ -75,12 +75,12 @@ const char Id3v20Fields[] PROGMEM =
 
 #define QTFF_ID 4
 const char iTunesFields[] PROGMEM =
-  "\xa9""nam"
-  "\xa9""alb"
+  "\xA9""nam"
+  "\xA9""alb"
   "\x61""ART"
-  "\xa9""ART"
-  "\xa9""gen"
-  "\xa9""day";
+  "\xA9""ART"
+  "\xA9""gen"
+  "\xA9""day";
 
 const char iTunesPath[] PROGMEM =
   "moov""udta""meta""ilst";
