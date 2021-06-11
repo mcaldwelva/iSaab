@@ -13,10 +13,6 @@ CDCClass CDC;
 
 // perform one-time setup on power-up
 void CDCClass::setup() {
-  // deselect SD card
-  pinMode(SD_CS, OUTPUT);
-  digitalWrite(SD_CS, HIGH);
-
   // setup VS1053 pins
   VS1053::setup();
 
@@ -166,21 +162,20 @@ void CDCClass::readPresets(const __FlashStringHelper* fileName) {
 
   // open the file
   File file = SD.open(fileName);
-  if (file) {
-    uint8_t i = 0;
-    while (i < NUM_PRESETS && file.available()) {
-      uint8_t c = file.read() - '0';
-      if (c <= 9) {
-        presets[i] *= 10;
-        presets[i] += c;
-      } else {
-        i++;
-      }
-    }
 
-    // done
-    file.close();
+  uint8_t i = 0;
+  while (i < NUM_PRESETS && file.available()) {
+    uint8_t c = file.read() - '0';
+    if (c <= 9) {
+      presets[i] *= 10;
+      presets[i] += c;
+    } else {
+      i++;
+    }
   }
+
+  // done
+  file.close();
 }
 
 

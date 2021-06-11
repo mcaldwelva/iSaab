@@ -168,44 +168,35 @@ uint16_t VS1053::trackTime() {
 // load a patch or plugin from disk
 bool VS1053::loadPlugin(const __FlashStringHelper* fileName) {
   uint8_t buff[2];
-  uint16_t byteCount = 0, addr, count, val;
-  uint32_t fileSize;
+  uint16_t addr, count, val;
 
   File plugin = SD.open(fileName);
-  if (plugin) {
-    fileSize = plugin.size();
-    while (byteCount < fileSize) {
-      plugin.read(buff, 2);
-      addr = buff[0];
+  while (plugin.available()) {
+    plugin.read(buff, 2);
+    addr = buff[0];
 
-      plugin.read(buff, 2);
-      count = LE8x2(buff);
-      byteCount += 4;
+    plugin.read(buff, 2);
+    count = LE8x2(buff);
 
-      if (count & 0x8000) {
-        // RLE run, replicate n samples
-        count &= 0x7FFF;
+    if (count & 0x8000) {
+      // RLE run, replicate n samples
+      count &= 0x7FFF;
+      plugin.read(buff, 2);
+      val = LE8x2(buff);
+      while (count--) {
+        sciWrite(addr, val);
+      }
+    } else {
+      // Copy run, copy n samples
+      while (count--) {
         plugin.read(buff, 2);
         val = LE8x2(buff);
-        while (count--) {
-          sciWrite(addr, val);
-        }
-
-        byteCount += 2;
-      } else {
-        // Copy run, copy n samples
-        while (count--) {
-          plugin.read(buff, 2);
-          val = LE8x2(buff);
-          sciWrite(addr, val);
-
-          byteCount += 2;
-        }
+        sciWrite(addr, val);
       }
     }
-
-    plugin.close();
   }
+
+  plugin.close();
 }
 
 

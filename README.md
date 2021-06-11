@@ -78,4 +78,4 @@ http://www.ridgecrop.demon.co.uk/index.htm?fat32format.htm)
 
 * Only connect or disconnnect the module while the car is off and key removed from the ingition.
 
-* When the module is shutdown, only the LED on the daughter card will remain lit to indicate power. The module draws ~21mA in this state.
+* When the module is shutdown, only the LED on the daughter card will remain lit to indicate power. The module draws ~13mA in this state.
