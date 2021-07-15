@@ -11,7 +11,7 @@ This module replaces the factory CD changer on the Saab 9-3 OG and 9-5 OG. All c
 
 This is based on the [BlueSaab 3.5mm module](http://bluesaab.blogspot.com/2014/03/how-to-build-your-own-35mm-version-of.html) with some modifications to incorporate a sound card and reduce power consumption. The following or similar parts are required:
 
-* [iSaab board](https://oshpark.com/shared_projects/YxlNUQUI)
+* [iSaab board](https://oshpark.com/shared_projects/o4QRu2nz)
 
 * [ICs, caps, resistors, etc.](https://www.mouser.com/ProjectManager/ProjectDetail.aspx?AccessID=5A5DA965B5)
 
