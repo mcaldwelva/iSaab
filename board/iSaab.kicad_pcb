@@ -320,7 +320,7 @@
   )
 
   (module Capacitor_THT:CP_Radial_D5.0mm_P2.50mm (layer Top) (tedit 5DDA272A) (tstamp 5DD70030)
-    (at 169.3 103.932173)
+    (at 169.3 102.87)
     (descr "CP, Radial series, Radial, pin pitch=2.50mm, , diameter=5mm, Electrolytic Capacitor")
     (tags "CP Radial series Radial pin pitch 2.50mm  diameter 5mm Electrolytic Capacitor")
     (fp_text reference C4 (at -4.2 0.715827) (layer F.SilkS)

@@ -24,7 +24,7 @@ class AudioFile : public File
     int readBlock(uint8_t *&buf);
     bool jump(int16_t secs, uint16_t rate);
     bool isHighBitRate() { return type == FLAC || type == DSF; }
-    const String &getTag(uint8_t tag) {
+    const String &getTag(Tag tag) {
       return tags[ tag < NUM_TAGS ? tag : NUM_TAGS ];
     }
     uint8_t *fillBuffer(uint8_t c, size_t n) {
