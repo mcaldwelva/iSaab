@@ -1,26 +1,16 @@
-diff -ru ./SD/src/utility/FatStructs.h ~/SD/src/utility/FatStructs.h
---- ./SD/src/utility/FatStructs.h	2019-10-11 11:15:02.000000000 -0400
-+++ ~/SD/src/utility/FatStructs.h	2020-02-20 15:33:32.558636800 -0500
-@@ -413,6 +413,6 @@
- }
- /** Directory entry is for a file or subdirectory */
- static inline uint8_t DIR_IS_FILE_OR_SUBDIR(const dir_t* dir) {
--  return (dir->attributes & DIR_ATT_VOLUME_ID) == 0;
-+  return (dir->attributes & (DIR_ATT_VOLUME_ID | DIR_ATT_SYSTEM | DIR_ATT_HIDDEN)) == 0;
- }
- #endif  // FatStructs_h
-diff -ru ./SD/src/utility/SdFile.cpp ~/SD/src/utility/SdFile.cpp
---- ./SD/src/utility/SdFile.cpp	2019-10-11 11:15:02.000000000 -0400
-+++ ~/SD/src/utility/SdFile.cpp	2020-02-20 15:34:56.639194700 -0500
-@@ -315,7 +315,7 @@
-         }
-       #endif
-       // check size and only allow ASCII printable characters
--      if (i > n || c < 0X21 || c > 0X7E) {
-+      if (i > n || c < 0x20 || c == 0x7F) {
-         return false;
-       }
-       // only upper case allowed in 8.3 names - convert lower to upper
+diff -ru ./SD/src/SD.cpp ~/SD/src/SD.cpp
+--- ./SD/src/SD.cpp  2019-10-11 11:15:02.000000000 -0400
++++ ~/SD/src/SD.cpp  2022-09-13 20:31:19.079137600 -0400
+@@ -613,7 +613,8 @@
+       //Serial.print("try to open file ");
+       //Serial.println(name);
+
+-      if (f.open(_file, name, mode)) {
++      uint16_t index = _file->curPosition() / sizeof(dir_t) - 1;
++      if (f.open(_file, index, mode)) {
+         //Serial.println("OK!");
+         return File(f, name);
+       } else {
 diff -ru ./SD/src/utility/SdFat.h ~/SD/src/utility/SdFat.h
 --- ./SD/src/utility/SdFat.h	2019-10-11 11:15:02.000000000 -0400
 +++ ~/SD/src/utility/SdFat.h	2020-02-20 15:35:31.724036500 -0500

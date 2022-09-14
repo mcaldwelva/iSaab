@@ -48,7 +48,7 @@ The BOM components are labeled to match the board. Cut the ribbon cable and stri
 
 * Use Arduino 1.8.12 (or higher)
 
-* Apply the [SD library patch](https://raw.githubusercontent.com/mcaldwelva/iSaab/master/data/SD.diff) to fix issues with closing files, allow extended ASCII characters in file names, and exclude hidden/system files from directory listings:
+* Apply the [SD library patch](https://raw.githubusercontent.com/mcaldwelva/iSaab/master/data/SD.diff) to fix performance issues:
 
 > C:\Program Files (x86)\Arduino\libraries> patch -p1 < %HOMEPATH%\Documents\Arduino\iSaab\data\SD.diff
 
