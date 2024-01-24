@@ -39,7 +39,7 @@ void CANClass::begin(uint16_t speed, const uint16_t high[] PROGMEM, const uint16
   uint8_t cnf1, cnf2, cnf3;
   switch (speed) {
     case 47:
-      // http://www.microchip.com/forums/m/tm.aspx?m=236967&p=2
+      // https://forum.microchip.com/s/topic/a5C3l000000Lyo8EAC/t225476
       cnf1 = 0xc7; cnf2 = 0xbe; cnf3 = 0x04;
       break;
     case 500:

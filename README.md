@@ -17,7 +17,7 @@ This is based on the [BlueSaab 3.5mm module](http://bluesaab.blogspot.com/2014/0
 
 * [TE 827229-1 connector](https://www.connectorpeople.com/Connector/TYCO-AMP-TE_CONNECTIVITY/8/827229-1)
 
-* [VS1053 breakout board](https://www.amazon.com/VS1053B-Arduino-Breakout-Real-time-Recording/dp/B07KNV2YTM)
+* [VS1053 breakout board](https://www.amazon.com/VS1053-VS1053B-Real-Time-Recording-Arduino/dp/B09134QG8Y)
 
 * FTDI cable
 
@@ -46,11 +46,11 @@ The BOM components are labeled to match the board. Cut the ribbon cable and stri
 
 ## Software
 
-* Use Arduino 1.8.12 (or higher)
+* Use Arduino 2.2.1 (or higher)
 
 * Apply the [SD library patch](https://raw.githubusercontent.com/mcaldwelva/iSaab/master/data/SD.diff) to fix performance issues:
 
-> C:\Program Files (x86)\Arduino\libraries> patch -p1 < %HOMEPATH%\Documents\Arduino\iSaab\data\SD.diff
+> patch -p1 -d %LOCALAPPDATA%\Arduino15\libraries < %HOMEPATH%\Documents\Arduino\iSaab\data\SD.diff
 
 * Upload the iSaab code to the module using an FTDI cable
 

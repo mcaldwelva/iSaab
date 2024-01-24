@@ -483,18 +483,18 @@ int AudioFile::readBlock(uint8_t *&buf) {
 // number of seconds and VS1053 calculated byterate
 // returns true if successful
 bool AudioFile::jump(int16_t secs, uint16_t rate) {
-  long bytes;
+  int32_t bytes;
 
   // calculate number of bytes to jump
   switch (type) {
     case FLAC:
-      bytes = secs * 4 * (long)rate;
+      bytes = secs * (int32_t)rate * (int32_t)4;
       break;
     case DSF:
-      bytes = secs * 352800;
+      bytes = secs * (int32_t)352800;
       break;
     default:
-      bytes = secs * (rate & 0xfffc);
+      bytes = secs * (int32_t)(rate & 0xfffc);
       break;
   }
 
